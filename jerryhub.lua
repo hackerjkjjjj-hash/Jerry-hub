@@ -402,6 +402,28 @@ for _, plr in pairs(Players:GetPlayers()) do
 end
 
 ---------------------------------------------------------
+-- 4. Anti-AFK Logic (កុំឱ្យហ្គេម Kick ពេលទុកចោល)
+---------------------------------------------------------
+local VirtualUser = game:GetService("VirtualUser")
+local antiAFKConnection = nil
+
+createToggleBtn(HomePage, "Anti-AFK Infinity", 135, function(state)
+    if state then
+        -- ភ្ជាប់ Event ពេលហ្គេមដឹងថាអ្នកឈរស្ងៀម (Idle)
+        antiAFKConnection = LocalPlayer.Idled:Connect(function()
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new())
+        end)
+    else
+        -- បិទមុខងារវិញ
+        if antiAFKConnection then
+            antiAFKConnection:Disconnect()
+            antiAFKConnection = nil
+        end
+    end
+end)
+
+---------------------------------------------------------
 -- PAGE 2: PLAYER (បង្ហាញ Player ទាំងអស់ក្នុង Server)
 ---------------------------------------------------------
 local PlayerScroll = Instance.new("ScrollingFrame")
