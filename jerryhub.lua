@@ -62,7 +62,7 @@ MainLogo.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(0, 200, 0, 35)
 Title.Position = UDim2.new(0, 50, 0, 8)
-Title.Text = "DELTA EXECUTOR"
+Title.Text = "JERRY v1.0"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Font = Enum.Font.SourceSansBold
@@ -212,156 +212,194 @@ end
 
 createToggleBtn(HomePage, "Noclip", 0, toggleNoclip)
 
--- 2. Fly Logic
+---------------------------------------------------------
+-- 2. Fly Logic (Optimized for Mobile & PC)
+---------------------------------------------------------
 local flyEnabled = false
+local flySpeed = 50
+local flyConnection = nil
 local flyBV, flyBG
-createToggleBtn(HomePage, "Fly", 45, function(state)
-    flyEnabled = state
+
+local function disableFly()
+    if flyBV then flyBV:Destroy() flyBV = nil end
+    if flyBG then flyBG:Destroy() flyBG = nil end
+    if flyConnection then flyConnection:Disconnect() flyConnection = nil end
+    
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    
-    if flyEnabled and hrp then
-        flyBV = Instance.new("BodyVelocity", hrp)
-        flyBV.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-        flyBV.Velocity = Vector3.zero
-        
-        flyBG = Instance.new("BodyGyro", hrp)
-        flyBG.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-        flyBG.CFrame = hrp.CFrame
-    else
-        if flyBV then flyBV:Destroy() end
-        if flyBG then flyBG:Destroy() end
-    end
-end)
-
-RunService.RenderStepped:Connect(function()
-    if flyEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local hrp = LocalPlayer.Character.HumanoidRootPart
-        local cam = workspace.CurrentCamera
-        local moveDir = Vector3.zero
-        
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
-        
-        if flyBV then flyBV.Velocity = moveDir * 50 end
-        if flyBG then flyBG.CFrame = cam.CFrame end
-    end
-end)
-
----------------------------------------------------------
--- 3. ESP Box + Line Logic (Optimized for Mobile)
----------------------------------------------------------
-local espEnabled = false
-
-local function addESP(plr)
-    if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-        local hrp = plr.Character.HumanoidRootPart
-        
-        -- 1. បង្កើត Box ESP (BillboardGui)
-        if not hrp:FindFirstChild("ESPBox") then
-            local bb = Instance.new("BillboardGui")
-            bb.Name = "ESPBox"
-            bb.Adornee = hrp
-            bb.Size = UDim2.new(4, 0, 5.5, 0)
-            bb.AlwaysOnTop = true
-            bb.Parent = hrp
-
-            local boxFrame = Instance.new("Frame")
-            boxFrame.Size = UDim2.new(1, 0, 1, 0)
-            boxFrame.BackgroundTransparency = 1
-            boxFrame.Parent = bb
-
-            local stroke = Instance.new("UIStroke")
-            stroke.Color = Color3.fromRGB(255, 0, 0)
-            stroke.Thickness = 1.5
-            stroke.Parent = boxFrame
-        end
-
-        -- 2. បង្កើត Line Tracer (Beam)
-        local localChar = LocalPlayer.Character
-        local localHRP = localChar and localChar:FindFirstChild("HumanoidRootPart")
-        
-        if localHRP and not hrp:FindFirstChild("ESPLine") then
-            local a0 = localHRP:FindFirstChild("ESPAttachment")
-            if not a0 then
-                a0 = Instance.new("Attachment")
-                a0.Name = "ESPAttachment"
-                a0.Parent = localHRP
-            end
-
-            local a1 = Instance.new("Attachment")
-            a1.Name = "ESPLineAttachment"
-            a1.Parent = hrp
-
-            local beam = Instance.new("Beam")
-            beam.Name = "ESPLine"
-            beam.Attachment0 = a0
-            beam.Attachment1 = a1
-            beam.Color = ColorSequence.new(Color3.fromRGB(255, 0, 0))
-            beam.Width0 = 0.08
-            beam.Width1 = 0.08
-            beam.FaceCamera = true
-            beam.Parent = hrp
-        end
+    if hrp then
+        hrp.Velocity = Vector3.zero
     end
 end
 
-local function removeESP(plr)
-    if plr.Character then
-        local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            if hrp:FindFirstChild("ESPBox") then hrp.ESPBox:Destroy() end
-            if hrp:FindFirstChild("ESPLineAttachment") then hrp.ESPLineAttachment:Destroy() end
-            if hrp:FindFirstChild("ESPLine") then hrp.ESPLine:Destroy() end
+createToggleBtn(HomePage, "Fly", 45, function(state)
+    flyEnabled = state
+    
+    if not flyEnabled then
+        disableFly()
+        return
+    end
+
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+    
+    if not hrp or not humanoid then return end
+
+    -- បង្កើត Physics Controllers សម្រាប់ហោះ
+    flyBV = Instance.new("BodyVelocity")
+    flyBV.Name = "FlyVelocity"
+    flyBV.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+    flyBV.Velocity = Vector3.zero
+    flyBV.Parent = hrp
+
+    flyBG = Instance.new("BodyGyro")
+    flyBG.Name = "FlyGyro"
+    flyBG.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
+    flyBG.CFrame = hrp.CFrame
+    flyBG.Parent = hrp
+
+    -- Loop សម្រាប់បញ្ជាទិសដៅតាម Camera លើទូរស័ព្ទ និង PC
+    flyConnection = RunService.RenderStepped:Connect(function()
+        if not flyEnabled or not hrp or not hrp.Parent then
+            disableFly()
+            return
+        end
+
+        local cam = workspace.CurrentCamera
+        local moveDir = humanoid.MoveDirection -- ទាញយកទិសដៅដើរពី Joystick ទូរស័ព្ទ ឬ WASD PC
+
+        flyBG.CFrame = cam.CFrame
+
+        if moveDir.Magnitude > 0 then
+            -- ហោះទៅមុខតាមទិសដៅដែលក្រឡេកមើល (Camera LookVector)
+            local flyVector = (cam.CFrame.LookVector * moveDir.Z * -1) + (cam.CFrame.RightVector * moveDir.X)
+            flyBV.Velocity = flyVector * flySpeed
+        else
+            flyBV.Velocity = Vector3.zero
+        end
+    end)
+end)
+
+-- សម្អាត Fly ស្វ័យប្រវត្តិពេលងាប់ (Respawn)
+LocalPlayer.CharacterAdded:Connect(function()
+    flyEnabled = false
+    disableFly()
+end)
+
+---------------------------------------------------------
+-- 3. ESP Box + Line Logic (Anti-Cheat Safe & Optimized)
+---------------------------------------------------------
+local espEnabled = false
+
+-- បង្កើត Folder ជាមួយឈ្មោះ Random ការពារ Anti-Cheat Scan រកឃើញ
+local espFolder = Instance.new("Folder")
+espFolder.Name = "ESP_Container_" .. math.random(1000, 9999)
+espFolder.Parent = ScreenGui
+
+local function removePlayerESP(plr)
+    if not espFolder then return end
+    local container = espFolder:FindFirstChild(plr.Name)
+    if container then
+        container:Destroy()
+    end
+end
+
+local function applyESP(plr)
+    if not espEnabled or plr == LocalPlayer or not plr.Character then return end
+    
+    local char = plr.Character
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local myChar = LocalPlayer.Character
+    local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    
+    if not hrp or not myHRP then return end
+    
+    removePlayerESP(plr)
+
+    local pContainer = Instance.new("Folder")
+    pContainer.Name = plr.Name
+    pContainer.Parent = espFolder
+
+    -- 1. ESP Box (BillboardGui ដាក់ក្នុង ScreenGui មិនបន្សល់ក្នុង Character គេ - Safe 100%)
+    local bb = Instance.new("BillboardGui")
+    bb.Name = "ESPBox"
+    bb.Adornee = hrp
+    bb.Size = UDim2.new(4, 0, 5.5, 0)
+    bb.AlwaysOnTop = true
+    bb.Parent = pContainer
+
+    local boxFrame = Instance.new("Frame")
+    boxFrame.Size = UDim2.new(1, 0, 1, 0)
+    boxFrame.BackgroundTransparency = 1
+    boxFrame.Parent = bb
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(255, 0, 0)
+    stroke.Thickness = 1.5
+    stroke.Parent = boxFrame
+
+    -- 2. ESP Line / Tracer (Beam)
+    local myAttachment = myHRP:FindFirstChild("MyESPAttachment")
+    if not myAttachment then
+        myAttachment = Instance.new("Attachment")
+        myAttachment.Name = "MyESPAttachment"
+        myAttachment.Parent = myHRP
+    end
+
+    local targetAttachment = hrp:FindFirstChild("TargetESPAttachment")
+    if not targetAttachment then
+        targetAttachment = Instance.new("Attachment")
+        targetAttachment.Name = "TargetESPAttachment"
+        targetAttachment.Parent = hrp
+    end
+
+    local beam = Instance.new("Beam")
+    beam.Name = "ESPLine"
+    beam.Attachment0 = myAttachment
+    beam.Attachment1 = targetAttachment
+    beam.Color = ColorSequence.new(Color3.fromRGB(255, 0, 0))
+    beam.Width0 = 0.05
+    beam.Width1 = 0.05
+    beam.FaceCamera = true
+    beam.Parent = pContainer
+end
+
+local function updateAllESP()
+    if not espFolder then return end
+    espFolder:ClearAllChildren()
+    if not espEnabled then return end
+    
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            applyESP(plr)
         end
     end
 end
 
 createToggleBtn(HomePage, "ESP Box Line", 90, function(state)
     espEnabled = state
-    for _, plr in pairs(Players:GetPlayers()) do
-        if espEnabled then
-            addESP(plr)
-        else
-            removeESP(plr)
-        end
-    end
+    updateAllESP()
 end)
 
-local function setupPlayerESP(plr)
+-- Auto update ពេល Player ថ្មីចូល ឬ Respawn
+Players.PlayerAdded:Connect(function(plr)
     plr.CharacterAdded:Connect(function()
         task.wait(0.5)
-        if espEnabled then
-            addESP(plr)
-        end
+        if espEnabled then applyESP(plr) end
     end)
-end
+end)
+
+Players.PlayerRemoving:Connect(removePlayerESP)
 
 for _, plr in pairs(Players:GetPlayers()) do
     if plr ~= LocalPlayer then
-        setupPlayerESP(plr)
+        plr.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            if espEnabled then applyESP(plr) end
+        end)
     end
 end
-
-Players.PlayerAdded:Connect(setupPlayerESP)
-
-
-RunService.RenderStepped:Connect(function()
-    if not espEnabled then return end
-    espFolder:ClearAllChildren()
-    
-    for _, plr in pairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-            local highlight = Instance.new("Highlight")
-            highlight.Adornee = plr.Character
-            highlight.FillColor = Color3.fromRGB(255, 50, 50)
-            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-            highlight.Parent = espFolder
-        end
-    end
-end)
 
 ---------------------------------------------------------
 -- PAGE 2: PLAYER (បង្ហាញ Player ទាំងអស់ក្នុង Server)
