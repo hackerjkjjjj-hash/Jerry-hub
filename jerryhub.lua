@@ -210,14 +210,11 @@ LocalPlayer.CharacterAdded:Connect(function()
     end
 end)
 
--- Improved Fly System
+-- Improved Fly System (Fixed for Delta & Modern Roblox)
 local flying = false
 local flySpeed = 60
 
 local flyConnection
-local flyVelocity
-local flyGyro
-
 local flyBtn = createButton("Fly: OFF", 65, hackPage)
 
 local function stopFly()
@@ -228,19 +225,14 @@ local function stopFly()
         flyConnection = nil
     end
 
-    if flyVelocity then
-        flyVelocity:Destroy()
-        flyVelocity = nil
-    end
-
-    if flyGyro then
-        flyGyro:Destroy()
-        flyGyro = nil
-    end
-
     local character = LocalPlayer.Character
     if character then
+        local root = character:FindFirstChild("HumanoidRootPart")
         local humanoid = character:FindFirstChildOfClass("Humanoid")
+        
+        if root then
+            root.AssemblyLinearVelocity = Vector3.zero
+        end
         if humanoid then
             humanoid.PlatformStand = false
         end
@@ -257,23 +249,7 @@ local function startFly()
     if not root or not humanoid then return end
 
     flying = true
-
     humanoid.PlatformStand = true
-
-    flyVelocity = Instance.new("BodyVelocity")
-    flyVelocity.Name = "JerryFlyVelocity"
-    flyVelocity.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-    flyVelocity.P = 25000
-    flyVelocity.Velocity = Vector3.zero
-    flyVelocity.Parent = root
-
-    flyGyro = Instance.new("BodyGyro")
-    flyGyro.Name = "JerryFlyGyro"
-    flyGyro.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
-    flyGyro.P = 25000
-    flyGyro.D = 500
-    flyGyro.CFrame = workspace.CurrentCamera.CFrame
-    flyGyro.Parent = root
 
     flyConnection = RunService.RenderStepped:Connect(function()
         if not flying then return end
@@ -295,23 +271,22 @@ local function startFly()
         local camera = workspace.CurrentCamera
         if not camera then return end
 
-        -- Camera direction
         local moveDirection = currentHumanoid.MoveDirection
+        local velocity = Vector3.zero
+        local camCFrame = camera.CFrame
+        local look = camCFrame.LookVector
 
-        -- Mobile joystick / PC movement
+        -- Mobile joystick / PC movement calculation
         if moveDirection.Magnitude > 0 then
-            flyVelocity.Velocity = moveDirection * flySpeed
+            local dir = (camCFrame.LookVector * moveDirection.Z + camCFrame.RightVector * moveDirection.X)
+            velocity = dir * flySpeed
         else
-            flyVelocity.Velocity = Vector3.zero
+            velocity = Vector3.new(0, 0.1, 0) -- ទប់មិនឱ្យធ្លាក់ពេលឈប់នៅនឹងថ្កល់
         end
 
-        -- Character follows camera rotation
-        local look = camera.CFrame.LookVector
-
-        flyGyro.CFrame = CFrame.lookAt(
-            currentRoot.Position,
-            currentRoot.Position + look
-        )
+        -- Character follows camera rotation smoothly
+        currentRoot.CFrame = CFrame.new(currentRoot.Position, currentRoot.Position + Vector3.new(look.X, 0, look.Z))
+        currentRoot.AssemblyLinearVelocity = velocity
     end)
 end
 
