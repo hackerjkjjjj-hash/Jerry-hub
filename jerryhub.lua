@@ -1,18 +1,52 @@
--- Jerry HUB Script UI (Draggable, Hacks, Players + Avatar, Profile Info Page)
+-- Jerry HUB Fixed for Delta Executor (Mobile & PC Friendly)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 -- លុប UI ចាស់ចោលបើមាន
-if CoreGui:FindFirstChild("JerryHubUI") then
-    CoreGui.JerryHubUI:Destroy()
+if PlayerGui:FindFirstChild("JerryHubUI") then
+    PlayerGui.JerryHubUI:Destroy()
 end
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "JerryHub v1.0"
-ScreenGui.Parent = CoreGui
+ScreenGui.Name = "JerryHubUI"
+ScreenGui.Parent = PlayerGui
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.ResetOnSpawn = false
+
+-- Custom Drag Function (ដំណើរការល្អនៅលើទូរស័ព្ទ)
+local function makeDraggable(frame, handle)
+    handle = handle or frame
+    local dragging, dragInput, dragStart, startPos
+    
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    handle.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
 
 -- Button Menu (អូសបាន)
 local ToggleBtn = Instance.new("TextButton")
@@ -25,12 +59,11 @@ ToggleBtn.Font = Enum.Font.SourceSansBold
 ToggleBtn.Text = "JERRY"
 ToggleBtn.TextColor3 = Color3.fromRGB(255, 170, 0)
 ToggleBtn.TextSize = 14
-ToggleBtn.Active = true
-ToggleBtn.Draggable = true
 
 local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 12)
 UICorner.Parent = ToggleBtn
+makeDraggable(ToggleBtn, ToggleBtn)
 
 -- Main Frame (អូសបាន)
 local MainFrame = Instance.new("Frame")
@@ -40,8 +73,6 @@ MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.Position = UDim2.new(0.5, -175, 0.5, -200)
 MainFrame.Size = UDim2.new(0, 350, 0, 400)
 MainFrame.Visible = false
-MainFrame.Active = true
-MainFrame.Draggable = true
 
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 12)
@@ -56,6 +87,7 @@ Title.Font = Enum.Font.SourceSansBold
 Title.Text = "JERRY HUB"
 Title.TextColor3 = Color3.fromRGB(255, 170, 0)
 Title.TextSize = 18
+makeDraggable(MainFrame, Title)
 
 ToggleBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
@@ -120,11 +152,48 @@ local function createButton(name, posY, parent)
     return btn
 end
 
--- Noclip Function
+-- Noclip Function - Improved
 local noclipEnabled = false
+local noclipConnection
+
+local function setNoclip(enabled)
+    noclipEnabled = enabled
+
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
+
+    if enabled then
+        noclipConnection = RunService.Stepped:Connect(function()
+            local character = LocalPlayer.Character
+            if not character then return end
+
+            for _, obj in ipairs(character:GetDescendants()) do
+                if obj:IsA("BasePart") then
+                    obj.CanCollide = false
+                    obj.CanTouch = false
+                end
+            end
+        end)
+    else
+        local character = LocalPlayer.Character
+        if character then
+            for _, obj in ipairs(character:GetDescendants()) do
+                if obj:IsA("BasePart") then
+                    obj.CanCollide = true
+                    obj.CanTouch = true
+                end
+            end
+        end
+    end
+end
+
 local noclipBtn = createButton("Noclip: OFF", 10, hackPage)
+
 noclipBtn.MouseButton1Click:Connect(function()
-    noclipEnabled = not noclipEnabled
+    setNoclip(not noclipEnabled)
+
     if noclipEnabled then
         noclipBtn.Text = "Noclip: ON"
         noclipBtn.TextColor3 = Color3.fromRGB(0, 255, 0)
@@ -134,60 +203,141 @@ noclipBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-RunService.Stepped:Connect(function()
-    if noclipEnabled and LocalPlayer.Character then
-        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-            end
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    if noclipEnabled then
+        setNoclip(true)
+    end
+end)
+
+-- Improved Fly System
+local flying = false
+local flySpeed = 60
+
+local flyConnection
+local flyVelocity
+local flyGyro
+
+local flyBtn = createButton("Fly: OFF", 65, hackPage)
+
+local function stopFly()
+    flying = false
+
+    if flyConnection then
+        flyConnection:Disconnect()
+        flyConnection = nil
+    end
+
+    if flyVelocity then
+        flyVelocity:Destroy()
+        flyVelocity = nil
+    end
+
+    if flyGyro then
+        flyGyro:Destroy()
+        flyGyro = nil
+    end
+
+    local character = LocalPlayer.Character
+    if character then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.PlatformStand = false
+        end
+    end
+end
+
+local function startFly()
+    local character = LocalPlayer.Character
+    if not character then return end
+
+    local root = character:FindFirstChild("HumanoidRootPart")
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+    if not root or not humanoid then return end
+
+    flying = true
+
+    humanoid.PlatformStand = true
+
+    flyVelocity = Instance.new("BodyVelocity")
+    flyVelocity.Name = "JerryFlyVelocity"
+    flyVelocity.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+    flyVelocity.P = 25000
+    flyVelocity.Velocity = Vector3.zero
+    flyVelocity.Parent = root
+
+    flyGyro = Instance.new("BodyGyro")
+    flyGyro.Name = "JerryFlyGyro"
+    flyGyro.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+    flyGyro.P = 25000
+    flyGyro.D = 500
+    flyGyro.CFrame = workspace.CurrentCamera.CFrame
+    flyGyro.Parent = root
+
+    flyConnection = RunService.RenderStepped:Connect(function()
+        if not flying then return end
+
+        local currentCharacter = LocalPlayer.Character
+        if not currentCharacter then
+            stopFly()
+            return
+        end
+
+        local currentRoot = currentCharacter:FindFirstChild("HumanoidRootPart")
+        local currentHumanoid = currentCharacter:FindFirstChildOfClass("Humanoid")
+
+        if not currentRoot or not currentHumanoid then
+            stopFly()
+            return
+        end
+
+        local camera = workspace.CurrentCamera
+        if not camera then return end
+
+        -- Camera direction
+        local moveDirection = currentHumanoid.MoveDirection
+
+        -- Mobile joystick / PC movement
+        if moveDirection.Magnitude > 0 then
+            flyVelocity.Velocity = moveDirection * flySpeed
+        else
+            flyVelocity.Velocity = Vector3.zero
+        end
+
+        -- Character follows camera rotation
+        local look = camera.CFrame.LookVector
+
+        flyGyro.CFrame = CFrame.lookAt(
+            currentRoot.Position,
+            currentRoot.Position + look
+        )
+    end)
+end
+
+flyBtn.MouseButton1Click:Connect(function()
+    if flying then
+        stopFly()
+
+        flyBtn.Text = "Fly: OFF"
+        flyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    else
+        startFly()
+
+        if flying then
+            flyBtn.Text = "Fly: ON"
+            flyBtn.TextColor3 = Color3.fromRGB(0, 255, 0)
         end
     end
 end)
 
--- Fly Function
-local flying = false
-local flyBtn = createButton("Fly: OFF", 65, hackPage)
-local ctrl = {f = 0, b = 0, l = 0, r = 0}
-local speeds = 50
+LocalPlayer.CharacterAdded:Connect(function()
+    stopFly()
 
-flyBtn.MouseButton1Click:Connect(function()
-    flying = not flying
-    if flying then
-        flyBtn.Text = "Fly: ON"
-        flyBtn.TextColor3 = Color3.fromRGB(0, 255, 0)
-        local char = LocalPlayer.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            local hrp = char.HumanoidRootPart
-            local bg = Instance.new("BodyGyro", hrp)
-            bg.Name = "FlyGyro"
-            bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-            bg.CFrame = hrp.CFrame
-            local bv = Instance.new("BodyVelocity", hrp)
-            bv.Name = "FlyVelocity"
-            bv.Velocity = Vector3.new(0,0,0)
-            bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-            
-            task.spawn(function()
-                while flying and char and char:FindFirstChild("HumanoidRootPart") do
-                    RunService.RenderStepped:Wait()
-                    local camera = workspace.CurrentCamera
-                    bv.Velocity = ((camera.CFrame.LookVector * (ctrl.f + ctrl.b)) + ((camera.CFrame * CFrame.new(ctrl.l + ctrl.r, (ctrl.f + ctrl.b) * 0.2, 0).p) - camera.CFrame.p)) * speeds
-                    bg.CFrame = camera.CFrame
-                end
-                if bg then bg:Destroy() end
-                if bv then bv:Destroy() end
-            end)
-        end
-    else
-        flyBtn.Text = "Fly: OFF"
-        flyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        flying = false
-        local char = LocalPlayer.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            if char.HumanoidRootPart:FindFirstChild("FlyGyro") then char.HumanoidRootPart.FlyGyro:Destroy() end
-            if char.HumanoidRootPart:FindFirstChild("FlyVelocity") then char.HumanoidRootPart.FlyVelocity:Destroy() end
-        end
-    end
+    task.wait(0.5)
+
+    flyBtn.Text = "Fly: OFF"
+    flyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 end)
 
 -- Page 2: Players List (Avatar + Teleport)
