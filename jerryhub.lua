@@ -435,10 +435,84 @@ createToggleBtn(HomePage, "Anti-AFK Infinity", 135, function(state)
     end
 end)
 
+--// FPS BOOST + OPTIMIZE
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+
+local fpsBoostEnabled = false
+local optimizeEnabled = false
+
+local function setFPSBoost(enabled)
+    fpsBoostEnabled = enabled
+
+    if enabled then
+        -- Disable expensive lighting effects
+        Lighting.GlobalShadows = false
+        Lighting.FogEnd = 100000
+        Lighting.Brightness = 1
+
+        -- Lower terrain visual cost
+        local terrain = Workspace:FindFirstChildOfClass("Terrain")
+        if terrain then
+            terrain.WaterWaveSize = 0
+            terrain.WaterWaveSpeed = 0
+            terrain.WaterReflectance = 0
+            terrain.WaterTransparency = 1
+        end
+
+        -- Reduce particle / visual effects
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            if obj:IsA("ParticleEmitter")
+            or obj:IsA("Trail")
+            or obj:IsA("Beam") then
+                obj.Enabled = false
+            elseif obj:IsA("BloomEffect")
+            or obj:IsA("BlurEffect")
+            or obj:IsA("SunRaysEffect")
+            or obj:IsA("ColorCorrectionEffect")
+            or obj:IsA("DepthOfFieldEffect") then
+                obj.Enabled = false
+            end
+        end
+    end
+end
+
+local function optimizeGame(enabled)
+    optimizeEnabled = enabled
+
+    if enabled then
+        -- Remove unnecessary shadows
+        Lighting.GlobalShadows = false
+
+        -- Disable visual effects
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            if obj:IsA("ParticleEmitter")
+            or obj:IsA("Trail")
+            or obj:IsA("Beam") then
+                obj.Enabled = false
+            end
+        end
+
+        -- Reduce material quality locally
+        pcall(function()
+            settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+        end)
+    end
+end
+
+--// HOME PAGE BUTTONS
+createToggleBtn(HomePage, "⚡ FPS Boost", 45, function(state)
+    setFPSBoost(state)
+end)
+
+createToggleBtn(HomePage, "🔧 Optimize", 90, function(state)
+    optimizeGame(state)
+end)
+
 ---------------------------------------------------------
 -- PAGE 2: PLAYER
 ---------------------------------------------------------
-local PlayerScroll = Instance.new("ScrollingFrame")
+local PLAYER = Instance.new("ScrollingFrame")
 PlayerScroll.Size = UDim2.new(1, 0, 1, 0)
 PlayerScroll.BackgroundTransparency = 1
 PlayerScroll.BorderSizePixel = 0
