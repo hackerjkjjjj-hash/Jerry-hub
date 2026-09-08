@@ -607,51 +607,151 @@ for _, data in ipairs(emoteList) do
 end
 
 ---------------------------------------------------------
--- PAGE 5: ANIMATION PACKS (ZOMBIE ONLY - FIXED)
----------------------------------------------------------
+-- PAGE 5: ANIMATION PACKS (ANIMATE SCRIPT)
+-- Uses Roblox's documented Zombie animation assets and the character's
+-- existing Animate script. This avoids HumanoidDescription changes.
+
 local localPlayer = game:GetService("Players").LocalPlayer
 
 local AnimationPacks = {
-    Zombie = { 
-        Swim = 619537096, 
-        Idle = 619535834, 
-        Jump = 619536283, 
-        Fall = 619535616, 
-        Walk = 619537468, 
-        Run = 619536621, 
-        Climb = 619535091 
+    Zombie = {
+        Idle     = "rbxassetid://616158929",
+        Idle2    = "rbxassetid://616160636",
+        Walk     = "rbxassetid://616168032",
+        Run      = "rbxassetid://616163682",
+        Jump     = "rbxassetid://616161997",
+        Fall     = "rbxassetid://616157476",
+        Climb    = "rbxassetid://616156119",
+        Swim     = "rbxassetid://616165109",
+        SwimIdle = "rbxassetid://616166655",
+    },
+
+    -- adidas Community Animation Pack
+    AdidasCommunity = {
+        Idle     = "rbxassetid://126354114956642",
+        Idle2    = "rbxassetid://126354114956642",
+        Walk     = "rbxassetid://106810508343012",
+        Run      = "rbxassetid://124765145869332",
+        Jump     = "rbxassetid://115715495289805",
+        Fall     = "rbxassetid://93993406355955",
+        Climb    = "rbxassetid://123695349157584",
+        Swim     = "rbxassetid://106537993816942",
+        SwimIdle = "rbxassetid://106537993816942",
     }
 }
+local zombieAnimationEnabled = false
+local respawnConnection = nil
 
-local function applyAnimationPack(packName)
-    local char = localPlayer.Character
-    if not char then return end
-    
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return end
-    
-    local pack = AnimationPacks[packName]
-    if not pack then return end
-    
-    -- ប្រើប្រាស់ HumanoidDescription ដើម្បីប្តូរ Animation ដោយសុវត្ថិភាព មិនឱ្យរឹងតួអង្គ
-    local success, desc = pcall(function()
-        return humanoid:GetAppliedDescription()
-    end)
-    
-    if success and desc then
-        desc.IdleAnimation = pack.Idle
-        desc.WalkAnimation = pack.Walk
-        desc.RunAnimation = pack.Run
-        desc.JumpAnimation = pack.Jump
-        desc.FallAnimation = pack.Fall
-        desc.ClimbAnimation = pack.Climb
-        desc.SwimAnimation = pack.Swim
-        
-        humanoid:ApplyDescription(desc)
+local function setAnimationId(parent, childName, animationId)
+    local obj = parent and parent:FindFirstChild(childName)
+    if obj and obj:IsA("Animation") then
+        obj.AnimationId = animationId
+        return true
+    end
+    return false
+end
+
+local function stopCurrentAnimations(humanoid)
+    local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
+    if animator then
+        for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+            track:Stop(0.08)
+        end
     end
 end
 
--- 1. Reset / Default Animation Button
+local function applyAnimationPack(character, pack)
+    if not character or not character.Parent or not pack then
+        return false
+    end
+
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local animate = character:FindFirstChild("Animate")
+
+    if not humanoid or not animate then
+        return false
+    end
+
+    local idle = animate:FindFirstChild("idle")
+    local walk = animate:FindFirstChild("walk")
+    local run = animate:FindFirstChild("run")
+    local jump = animate:FindFirstChild("jump")
+    local fall = animate:FindFirstChild("fall")
+    local climb = animate:FindFirstChild("climb")
+    local swim = animate:FindFirstChild("swim")
+    local swimIdle = animate:FindFirstChild("swimidle")
+
+    if idle then
+        setAnimationId(idle, "Animation1", pack.Idle)
+        setAnimationId(idle, "Animation2", pack.Idle2 or pack.Idle)
+    end
+    if walk then setAnimationId(walk, "WalkAnim", pack.Walk) end
+    if run then setAnimationId(run, "RunAnim", pack.Run) end
+    if jump then setAnimationId(jump, "JumpAnim", pack.Jump) end
+    if fall then setAnimationId(fall, "FallAnim", pack.Fall) end
+    if climb then setAnimationId(climb, "ClimbAnim", pack.Climb) end
+    if swim then setAnimationId(swim, "Swim", pack.Swim) end
+    if swimIdle then setAnimationId(swimIdle, "SwimIdle", pack.SwimIdle or pack.Swim) end
+
+    stopCurrentAnimations(humanoid)
+
+    local animateWasEnabled = animate.Enabled
+    animate.Enabled = false
+    task.wait(0.05)
+    animate.Enabled = animateWasEnabled
+
+    return true
+end
+
+local activeAnimationPack = nil
+
+local function applyZombieAnimation(character)
+    activeAnimationPack = "Zombie"
+    return applyAnimationPack(character, AnimationPacks.Zombie)
+end
+
+local function resetAnimations(character)
+    if not character or not character.Parent then return end
+
+    local animate = character:FindFirstChild("Animate")
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+    if humanoid then
+        stopCurrentAnimations(humanoid)
+    end
+
+    -- The cleanest reset is to let Roblox's current Animate script
+    -- restore its original IDs by respawning the character.
+    -- No character replacement is performed here.
+    if animate then
+        animate.Enabled = false
+        task.wait(0.05)
+        animate.Enabled = true
+    end
+end
+
+local function setupAnimationOnCharacter(character)
+    if not zombieAnimationEnabled or not activeAnimationPack then
+        return
+    end
+
+    local animate = character:WaitForChild("Animate", 5)
+    if not animate then return end
+
+    task.wait(0.1)
+    applyAnimationPack(character, AnimationPacks[activeAnimationPack])
+end
+
+-- Re-apply Zombie animations after every respawn.
+if respawnConnection then
+    respawnConnection:Disconnect()
+end
+
+respawnConnection = localPlayer.CharacterAdded:Connect(function(character)
+    setupAnimationOnCharacter(character)
+end)
+
+-- Reset / Default Animation button
 local ResetAnimBtn = Instance.new("TextButton")
 ResetAnimBtn.Size = UDim2.new(1, 0, 0, 30)
 ResetAnimBtn.Position = UDim2.new(0, 0, 0, 0)
@@ -664,20 +764,16 @@ ResetAnimBtn.Parent = AnimPage
 Instance.new("UICorner", ResetAnimBtn).CornerRadius = UDim.new(0, 6)
 
 ResetAnimBtn.MouseButton1Click:Connect(function()
-    local char = localPlayer.Character
-    if char then
-        local humanoid = char:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            local currentPos = char:GetPrimaryPartCFrame()
-            localPlayer.Character = nil
-            task.wait(0.1)
-            localPlayer.Character = char
-            char:SetPrimaryPartCFrame(currentPos)
-        end
+    zombieAnimationEnabled = false
+    activeAnimationPack = nil
+
+    local character = localPlayer.Character
+    if character then
+        resetAnimations(character)
     end
 end)
 
--- 2. Scrolling Frame for Animation Packs
+-- Scrolling Frame for Animation Packs
 local AnimScroll = Instance.new("ScrollingFrame")
 AnimScroll.Size = UDim2.new(1, 0, 1, -38)
 AnimScroll.Position = UDim2.new(0, 0, 0, 38)
@@ -695,7 +791,6 @@ AnimGrid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     AnimScroll.CanvasSize = UDim2.new(0, 0, 0, AnimGrid.AbsoluteContentSize.Y + 10)
 end)
 
--- Loop to create buttons
 for packName, _ in pairs(AnimationPacks) do
     local btn = Instance.new("TextButton")
     btn.Text = packName
@@ -705,8 +800,14 @@ for packName, _ in pairs(AnimationPacks) do
     btn.TextSize = 13
     btn.Parent = AnimScroll
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-    
+
     btn.MouseButton1Click:Connect(function()
-        applyAnimationPack(packName)
+        zombieAnimationEnabled = true
+        activeAnimationPack = packName
+
+        local character = localPlayer.Character
+        if character then
+            applyAnimationPack(character, AnimationPacks[packName])
+        end
     end)
 end
