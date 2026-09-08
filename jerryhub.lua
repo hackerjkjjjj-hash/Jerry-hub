@@ -627,16 +627,18 @@ local AnimationPacks = {
     },
 
     -- adidas Community Animation Pack
+    -- adidas Community
+    -- These are the actual animation asset IDs behind the catalog items.
     AdidasCommunity = {
-        Idle     = "rbxassetid://126354114956642",
-        Idle2    = "rbxassetid://126354114956642",
-        Walk     = "rbxassetid://106810508343012",
-        Run      = "rbxassetid://124765145869332",
-        Jump     = "rbxassetid://115715495289805",
-        Fall     = "rbxassetid://93993406355955",
-        Climb    = "rbxassetid://123695349157584",
-        Swim     = "rbxassetid://106537993816942",
-        SwimIdle = "rbxassetid://106537993816942",
+        Idle     = "rbxassetid://122257458498464",
+        Idle2    = "rbxassetid://122257458498464",
+        Walk     = "rbxassetid://122150855457006",
+        Run      = "rbxassetid://82598234841035",
+        Jump     = "rbxassetid://75290611992385",
+        Fall     = "rbxassetid://98600215928904",
+        Climb    = "rbxassetid://88763136693023",
+        Swim     = "rbxassetid://133308483266208",
+        SwimIdle = "rbxassetid://133308483266208",
     }
 }
 local zombieAnimationEnabled = false
@@ -672,32 +674,40 @@ local function applyAnimationPack(character, pack)
         return false
     end
 
-    local idle = animate:FindFirstChild("idle")
-    local walk = animate:FindFirstChild("walk")
-    local run = animate:FindFirstChild("run")
-    local jump = animate:FindFirstChild("jump")
-    local fall = animate:FindFirstChild("fall")
-    local climb = animate:FindFirstChild("climb")
-    local swim = animate:FindFirstChild("swim")
-    local swimIdle = animate:FindFirstChild("swimidle")
+    -- Wait briefly for Animate's folders/Animation objects to exist.
+    local idle = animate:FindFirstChild("idle") or animate:WaitForChild("idle", 3)
+    local walk = animate:FindFirstChild("walk") or animate:WaitForChild("walk", 3)
+    local run = animate:FindFirstChild("run") or animate:WaitForChild("run", 3)
+    local jump = animate:FindFirstChild("jump") or animate:WaitForChild("jump", 3)
+    local fall = animate:FindFirstChild("fall") or animate:WaitForChild("fall", 3)
+    local climb = animate:FindFirstChild("climb") or animate:WaitForChild("climb", 3)
+    local swim = animate:FindFirstChild("swim") or animate:WaitForChild("swim", 3)
+    local swimIdle = animate:FindFirstChild("swimidle") or animate:WaitForChild("swimidle", 3)
+
+    local changed = 0
 
     if idle then
-        setAnimationId(idle, "Animation1", pack.Idle)
-        setAnimationId(idle, "Animation2", pack.Idle2 or pack.Idle)
+        if setAnimationId(idle, "Animation1", pack.Idle) then changed += 1 end
+        if setAnimationId(idle, "Animation2", pack.Idle2 or pack.Idle) then changed += 1 end
     end
-    if walk then setAnimationId(walk, "WalkAnim", pack.Walk) end
-    if run then setAnimationId(run, "RunAnim", pack.Run) end
-    if jump then setAnimationId(jump, "JumpAnim", pack.Jump) end
-    if fall then setAnimationId(fall, "FallAnim", pack.Fall) end
-    if climb then setAnimationId(climb, "ClimbAnim", pack.Climb) end
-    if swim then setAnimationId(swim, "Swim", pack.Swim) end
-    if swimIdle then setAnimationId(swimIdle, "SwimIdle", pack.SwimIdle or pack.Swim) end
+    if walk and setAnimationId(walk, "WalkAnim", pack.Walk) then changed += 1 end
+    if run and setAnimationId(run, "RunAnim", pack.Run) then changed += 1 end
+    if jump and setAnimationId(jump, "JumpAnim", pack.Jump) then changed += 1 end
+    if fall and setAnimationId(fall, "FallAnim", pack.Fall) then changed += 1 end
+    if climb and setAnimationId(climb, "ClimbAnim", pack.Climb) then changed += 1 end
+    if swim and setAnimationId(swim, "Swim", pack.Swim) then changed += 1 end
+    if swimIdle and setAnimationId(swimIdle, "SwimIdle", pack.SwimIdle or pack.Swim) then changed += 1 end
+
+    if changed == 0 then
+        return false
+    end
 
     stopCurrentAnimations(humanoid)
 
+    -- Restart Animate so it reads the new AnimationIds.
     local animateWasEnabled = animate.Enabled
     animate.Enabled = false
-    task.wait(0.05)
+    task.wait()
     animate.Enabled = animateWasEnabled
 
     return true
