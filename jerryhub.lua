@@ -4,10 +4,10 @@ local RunService = game:GetService("RunService")[span_3](start_span)[span_3](end
 local UserInputService = game:GetService("UserInputService")[span_4](start_span)[span_4](end_span)
 
 -- Create Main ScreenGui
-local ScreenGui = Instance.new("ScreenGui")[span_5](start_span)[span_5](end_span)
-ScreenGui.Name = "DeltaCustomUI[span_6](start_span)"[span_6](end_span)
-ScreenGui.ResetOnSpawn = false[span_7](start_span)[span_7](end_span)
-ScreenGui.Parent = (game:GetService("CoreGui"):FindFirstChild("RobloxGui") and game:GetService("CoreGui")) or LocalPlayer:WaitForChild("PlayerGui")[span_8](start_span)[span_8](end_span)
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "DeltaCustomUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 -- Main UI Frame
 local MainFrame = Instance.new("Frame")[span_9](start_span)[span_9](end_span)
