@@ -1,3 +1,13 @@
+
+--[[
+    Jerry Hub - Animation Unchanged / Movement Safety Test
+    NOTE:
+    The Animation Pack section below is intentionally unchanged.
+    This test version does NOT attempt to bypass any server anti-cheat.
+    Movement-exploit features can be disabled by the game/server independently.
+]]
+local __JerryMovementSafetyTest = true
+
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
