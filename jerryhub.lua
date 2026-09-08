@@ -607,7 +607,7 @@ for _, data in ipairs(emoteList) do
 end
 
 ---------------------------------------------------------
--- PAGE 5: ANIMATION PACKS (ZOMBIE ONLY)
+-- PAGE 5: ANIMATION PACKS (ZOMBIE ONLY - FIXED)
 ---------------------------------------------------------
 local localPlayer = game:GetService("Players").LocalPlayer
 
@@ -627,39 +627,27 @@ local function applyAnimationPack(packName)
     local char = localPlayer.Character
     if not char then return end
     
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+    
     local pack = AnimationPacks[packName]
     if not pack then return end
     
-    local animateScript = char:FindFirstChild("Animate")
-    if animateScript then
-        if animateScript:FindFirstChild("idle") then
-            for _, anim in ipairs(animateScript.idle:GetChildren()) do
-                if anim:IsA("Animation") then anim.AnimationId = "rbxassetid://" .. pack.Idle end
-            end
-        end
-        if animateScript:FindFirstChild("walk") and animateScript.walk:FindFirstChild("WalkAnim") then
-            animateScript.walk.WalkAnim.AnimationId = "rbxassetid://" .. pack.Walk
-        end
-        if animateScript:FindFirstChild("run") and animateScript.run:FindFirstChild("RunAnim") then
-            animateScript.run.RunAnim.AnimationId = "rbxassetid://" .. pack.Run
-        end
-        if animateScript:FindFirstChild("jump") and animateScript.jump:FindFirstChild("JumpAnim") then
-            animateScript.jump.JumpAnim.AnimationId = "rbxassetid://" .. pack.Jump
-        end
-        if animateScript:FindFirstChild("fall") and animateScript.fall:FindFirstChild("FallAnim") then
-            animateScript.fall.FallAnim.AnimationId = "rbxassetid://" .. pack.Fall
-        end
-        if animateScript:FindFirstChild("climb") and animateScript.climb:FindFirstChild("ClimbAnim") then
-            animateScript.climb.ClimbAnim.AnimationId = "rbxassetid://" .. pack.Climb
-        end
-        if animateScript:FindFirstChild("swim") and animateScript.swim:FindFirstChild("Swim") then
-            animateScript.swim.Swim.AnimationId = "rbxassetid://" .. pack.Swim
-        end
+    -- ប្រើប្រាស់ HumanoidDescription ដើម្បីប្តូរ Animation ដោយសុវត្ថិភាព មិនឱ្យរឹងតួអង្គ
+    local success, desc = pcall(function()
+        return humanoid:GetAppliedDescription()
+    end)
+    
+    if success and desc then
+        desc.IdleAnimation = pack.Idle
+        desc.WalkAnimation = pack.Walk
+        desc.RunAnimation = pack.Run
+        desc.JumpAnimation = pack.Jump
+        desc.FallAnimation = pack.Fall
+        desc.ClimbAnimation = pack.Climb
+        desc.SwimAnimation = pack.Swim
         
-        -- បិទនិងបើក Animate Script វិញដើម្បីឱ្យវា Refresh ដំណើរការភ្លាមៗ
-        animateScript.Disabled = true
-        task.wait(0.1)
-        animateScript.Disabled = false
+        humanoid:ApplyDescription(desc)
     end
 end
 
@@ -707,7 +695,7 @@ AnimGrid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     AnimScroll.CanvasSize = UDim2.new(0, 0, 0, AnimGrid.AbsoluteContentSize.Y + 10)
 end)
 
--- Loop to create buttons (ഇนಲ್ಲಿបង្កើតតែប៊ូតុង Zombie មួយគត់)
+-- Loop to create buttons
 for packName, _ in pairs(AnimationPacks) do
     local btn = Instance.new("TextButton")
     btn.Text = packName
