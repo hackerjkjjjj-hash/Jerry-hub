@@ -435,6 +435,34 @@ createToggleBtn(HomePage, "Anti-AFK Infinity", 135, function(state)
     end
 end)
 
+-- 4. Spin 360° Logic
+local spinEnabled = false
+local spinConnection = nil
+
+local function toggleSpin360(state)
+    spinEnabled = state
+
+    if spinConnection then
+        spinConnection:Disconnect()
+        spinConnection = nil
+    end
+
+    if spinEnabled then
+        spinConnection = RunService.RenderStepped:Connect(function(dt)
+            local char = LocalPlayer.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+
+            if root then
+                root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(360) * dt, 0)
+            end
+        end)
+    end
+end
+
+--// HOME PAGE
+createToggleBtn(HomePage, "🔄 Spin 360°", 315, function(state)
+    toggleSpin360(state)
+end)
 ---------------------------------------------------------
 -- PAGE 2: PLAYER
 ---------------------------------------------------------
