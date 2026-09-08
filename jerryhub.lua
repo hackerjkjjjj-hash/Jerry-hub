@@ -7,7 +7,13 @@ local UserInputService = game:GetService("UserInputService")[span_4](start_span)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "DeltaCustomUI"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- ប្រើ gethui() ប្រសិនបើមាន បើគ្មានទេ ប្រើ PlayerGui ធម្មតា
+if gethui then
+    ScreenGui.Parent = gethui()
+else
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+end
 
 -- Main UI Frame
 local MainFrame = Instance.new("Frame")[span_9](start_span)[span_9](end_span)
