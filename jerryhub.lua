@@ -31,7 +31,7 @@ local OpenButton = Instance.new("ImageButton")
 OpenButton.Name = "OpenButton"
 OpenButton.Size = UDim2.new(0, 50, 0, 50)
 OpenButton.Position = UDim2.new(0, 15, 0.5, -25)
-OpenButton.Image = "rbxassetid://95612671006921"
+OpenButton.Image = "rbxassetid://135995313313068"
 OpenButton.BackgroundTransparency = 1
 OpenButton.Active = true
 OpenButton.Draggable = true
@@ -55,7 +55,7 @@ local MainLogo = Instance.new("ImageLabel")
 MainLogo.Name = "MainLogo"
 MainLogo.Size = UDim2.new(0, 35, 0, 35)
 MainLogo.Position = UDim2.new(0, 10, 0, 8)
-MainLogo.Image = "rbxassetid://116252557083126"
+MainLogo.Image = "rbxassetid://133870737244711"
 MainLogo.BackgroundTransparency = 1
 MainLogo.Parent = MainFrame
 
