@@ -210,11 +210,15 @@ LocalPlayer.CharacterAdded:Connect(function()
     end
 end)
 
--- Improved Fly System (Fixed for Delta & Modern Roblox)
-local flying = false
-local flySpeed = 60
+-- Infinite Yield Style Fly System for Delta Executor
+local LocalPlayer = game.Players.LocalPlayer
+local RunService = game:GetService("RunService")
 
+local flying = false
+local flySpeed = 50
 local flyConnection
+local bV, bG
+
 local flyBtn = createButton("Fly: OFF", 65, hackPage)
 
 local function stopFly()
@@ -225,14 +229,12 @@ local function stopFly()
         flyConnection = nil
     end
 
+    if bV then bV:Destroy() bV = nil end
+    if bG then bG:Destroy() bG = nil end
+
     local character = LocalPlayer.Character
     if character then
-        local root = character:FindFirstChild("HumanoidRootPart")
         local humanoid = character:FindFirstChildOfClass("Humanoid")
-        
-        if root then
-            root.AssemblyLinearVelocity = Vector3.zero
-        end
         if humanoid then
             humanoid.PlatformStand = false
         end
@@ -251,8 +253,25 @@ local function startFly()
     flying = true
     humanoid.PlatformStand = true
 
+    -- បង្កើត BodyVelocity និង BodyGyro ទម្រង់បែប Infinite Yield
+    bV = Instance.new("BodyVelocity")
+    bV.Name = "IY_BodyVelocity"
+    bV.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    bV.Velocity = Vector3.zero
+    bV.Parent = root
+
+    bG = Instance.new("BodyGyro")
+    bG.Name = "IY_BodyGyro"
+    bG.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+    bG.P = 15000
+    bG.CFrame = root.CFrame
+    bG.Parent = root
+
     flyConnection = RunService.RenderStepped:Connect(function()
-        if not flying then return end
+        if not flying then 
+            stopFly()
+            return 
+        end
 
         local currentCharacter = LocalPlayer.Character
         if not currentCharacter then
@@ -262,43 +281,38 @@ local function startFly()
 
         local currentRoot = currentCharacter:FindFirstChild("HumanoidRootPart")
         local currentHumanoid = currentCharacter:FindFirstChildOfClass("Humanoid")
+        local camera = workspace.CurrentCamera
 
-        if not currentRoot or not currentHumanoid then
+        if not currentRoot or not currentHumanoid or not camera then
             stopFly()
             return
         end
 
-        local camera = workspace.CurrentCamera
-        if not camera then return end
-
         local moveDirection = currentHumanoid.MoveDirection
-        local velocity = Vector3.zero
         local camCFrame = camera.CFrame
-        local look = camCFrame.LookVector
+        local velocity = Vector3.zero
 
-        -- Mobile joystick / PC movement calculation
+        -- គណនាទិសដៅរលូនស្រដៀង Infinite Yield (តាម Joystick និង កាមេរ៉ា)
         if moveDirection.Magnitude > 0 then
-            local dir = (camCFrame.LookVector * moveDirection.Z + camCFrame.RightVector * moveDirection.X)
-            velocity = dir * flySpeed
+            velocity = (camCFrame.LookVector * moveDirection.Z + camCFrame.RightVector * moveDirection.X) * flySpeed
+            -- បន្ថែមការងើបឡើង/ចុះក្រោមតាមទិសដៅកាមេរ៉ា
+            velocity = Vector3.new(velocity.X, camCFrame.LookVector.Y * moveDirection.Magnitude * flySpeed, velocity.Z)
         else
-            velocity = Vector3.new(0, 0.1, 0) -- ទប់មិនឱ្យធ្លាក់ពេលឈប់នៅនឹងថ្កល់
+            velocity = Vector3.zero
         end
 
-        -- Character follows camera rotation smoothly
-        currentRoot.CFrame = CFrame.new(currentRoot.Position, currentRoot.Position + Vector3.new(look.X, 0, look.Z))
-        currentRoot.AssemblyLinearVelocity = velocity
+        bV.Velocity = velocity
+        bG.CFrame = camCFrame
     end)
 end
 
 flyBtn.MouseButton1Click:Connect(function()
     if flying then
         stopFly()
-
         flyBtn.Text = "Fly: OFF"
         flyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     else
         startFly()
-
         if flying then
             flyBtn.Text = "Fly: ON"
             flyBtn.TextColor3 = Color3.fromRGB(0, 255, 0)
@@ -308,9 +322,7 @@ end)
 
 LocalPlayer.CharacterAdded:Connect(function()
     stopFly()
-
     task.wait(0.5)
-
     flyBtn.Text = "Fly: OFF"
     flyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 end)
