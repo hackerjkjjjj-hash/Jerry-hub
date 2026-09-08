@@ -621,82 +621,93 @@ for _, data in ipairs(emoteList) do
 end
 
 ---------------------------------------------------------
--- PAGE 5: ANIMATIONS
+-- PAGE 5: ANIMATION PACKS
 ---------------------------------------------------------
-local animTrack = nil
+local AnimationPacks = {
+    Ninja = { Swim = 658832807, Idle = 658832408, Jump = 658832070, Fall = 658831500, Walk = 658831143, Run = 658830056, Climb = 658833139 },
+    Cartoony = { Swim = 837012509, Idle = 837011741, Jump = 837011171, Fall = 837010685, Walk = 837010234, Run = 837009922, Climb = 837013990 },
+    Levitation = { Swim = 619543721, Idle = 619542203, Jump = 619542888, Fall = 619541867, Walk = 619544080, Run = 619543231, Climb = 619541458 },
+    Stylish = { Swim = 619512450, Idle = 619511648, Jump = 619511974, Fall = 619511417, Walk = 619512767, Run = 619512153, Climb = 619509955 },
+    Vampire = { Swim = 1113742944, Idle = 1113742618, Jump = 1113742359, Fall = 1113742092, Walk = 1113741192, Run = 1113740510, Climb = 1113743239 },
+    Robot = { Swim = 619522642, Idle = 619521748, Jump = 619522088, Fall = 619521521, Walk = 619522849, Run = 619522386, Climb = 619521311 },
+    Toy = { Swim = 973772659, Idle = 973771666, Jump = 973770652, Fall = 973768058, Walk = 973767371, Run = 973766674, Climb = 973773170 },
+    Bubbly = { Swim = 1018554245, Idle = 1018553897, Jump = 1018553240, Fall = 1018552770, Walk = 1018549681, Run = 1018548665, Climb = 1018554668 },
+    Zombie = { Swim = 619537096, Idle = 619535834, Jump = 619536283, Fall = 619535616, Walk = 619537468, Run = 619536621, Climb = 619535091 },
+    Elder = { Swim = 892268710, Idle = 892268340, Jump = 892267917, Fall = 892267521, Walk = 892267099, Run = 892265784, Climb = 892269341 },
+    Superhero = { Swim = 619529095, Idle = 619528125, Jump = 619528412, Fall = 619527817, Walk = 619529601, Run = 619528716, Climb = 619527470 },
+    Werewolf = { Swim = 1113752975, Idle = 1113752682, Jump = 1113752285, Fall = 1113751889, Walk = 1113751657, Run = 1113750642, Climb = 1113754738 },
+    Mage = { Swim = 754638471, Idle = 754637456, Jump = 754637084, Fall = 754636589, Walk = 754636298, Run = 754635032, Climb = 754639239 },
+    Astronaut = { Swim = 1090133583, Idle = 1090133099, Jump = 1090132507, Fall = 1090132063, Walk = 1090131576, Run = 1090130630, Climb = 1090134016 },
+    Pirate = { Swim = 837025054, Idle = 837024662, Jump = 837024350, Fall = 837024147, Walk = 837023892, Run = 837023444, Climb = 837025325 },
+    Knight = { Swim = 734327363, Idle = 734327140, Jump = 734326930, Fall = 734326679, Walk = 734326330, Run = 734325948, Climb = 734329002 }
+}
 
-local function playAnim(animId)
+local function applyAnimationPack(packName)
     local char = LocalPlayer.Character
-    local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-    local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
+    if not char then return end
     
-    if animator then
-        if animTrack then
-            animTrack:Stop()
+    local pack = AnimationPacks[packName]
+    if not pack then return end
+    
+    local animateScript = char:FindFirstChild("Animate")
+    if animateScript then
+        if animateScript:FindFirstChild("idle") then
+            for _, anim in ipairs(animateScript.idle:GetChildren()) do
+                if anim:IsA("Animation") then anim.AnimationId = "rbxassetid://" .. pack.Idle end
+            end
         end
-        
-        local anim = Instance.new("Animation")
-        anim.AnimationId = "rbxassetid://" .. tostring(animId)
-        
-        animTrack = animator:LoadAnimation(anim)
-        animTrack:Play()
+        if animateScript:FindFirstChild("walk") and animateScript.walk:FindFirstChild("WalkAnim") then
+            animateScript.walk.WalkAnim.AnimationId = "rbxassetid://" .. pack.Walk
+        end
+        if animateScript:FindFirstChild("run") and animateScript.run:FindFirstChild("RunAnim") then
+            animateScript.run.RunAnim.AnimationId = "rbxassetid://" .. pack.Run
+        end
+        if animateScript:FindFirstChild("jump") and animateScript.jump:FindFirstChild("JumpAnim") then
+            animateScript.jump.JumpAnim.AnimationId = "rbxassetid://" .. pack.Jump
+        end
+        if animateScript:FindFirstChild("fall") and animateScript.fall:FindFirstChild("FallAnim") then
+            animateScript.fall.FallAnim.AnimationId = "rbxassetid://" .. pack.Fall
+        end
+        if animateScript:FindFirstChild("climb") and animateScript.climb:FindFirstChild("ClimbAnim") then
+            animateScript.climb.ClimbAnim.AnimationId = "rbxassetid://" .. pack.Climb
+        end
+        if animateScript:FindFirstChild("swim") and animateScript.swim:FindFirstChild("Swim") then
+            animateScript.swim.Swim.AnimationId = "rbxassetid://" .. pack.Swim
+        end
     end
 end
 
--- 1. Stop Animation Button
-local StopAnimBtn = Instance.new("TextButton")
-StopAnimBtn.Size = UDim2.new(1, 0, 0, 30)
-StopAnimBtn.Position = UDim2.new(0, 0, 0, 0)
-StopAnimBtn.Text = "Stop Animation"
-StopAnimBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-StopAnimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-StopAnimBtn.Font = Enum.Font.SourceSansBold
-StopAnimBtn.TextSize = 14
-StopAnimBtn.Parent = AnimPage
-Instance.new("UICorner", StopAnimBtn).CornerRadius = UDim.new(0, 6)
+-- 1. Reset / Default Animation Button
+local ResetAnimBtn = Instance.new("TextButton")
+ResetAnimBtn.Size = UDim2.new(1, 0, 0, 30)
+ResetAnimBtn.Position = UDim2.new(0, 0, 0, 0)
+ResetAnimBtn.Text = "Reset Animation (Default)"
+ResetAnimBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+ResetAnimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ResetAnimBtn.Font = Enum.Font.SourceSansBold
+ResetAnimBtn.TextSize = 14
+ResetAnimBtn.Parent = AnimPage
+Instance.new("UICorner", ResetAnimBtn).CornerRadius = UDim.new(0, 6)
 
-StopAnimBtn.MouseButton1Click:Connect(function()
-    if animTrack then
-        animTrack:Stop()
-        animTrack = nil
+ResetAnimBtn.MouseButton1Click:Connect(function()
+    local char = LocalPlayer.Character
+    if char then
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            -- Reset character to reload default animations
+            local currentPos = char:GetPrimaryPartCFrame()
+            LocalPlayer.Character = nil
+            task.wait(0.1)
+            LocalPlayer.Character = char
+            char:SetPrimaryPartCFrame(currentPos)
+        end
     end
 end)
 
--- 2. Custom Animation ID Box & Play Button
-local CustomAnimBox = Instance.new("TextBox")
-CustomAnimBox.Size = UDim2.new(0.7, -5, 0, 32)
-CustomAnimBox.Position = UDim2.new(0, 0, 0, 36)
-CustomAnimBox.PlaceholderText = "Enter Animation ID..."
-CustomAnimBox.Text = ""
-CustomAnimBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-CustomAnimBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-CustomAnimBox.Font = Enum.Font.SourceSans
-CustomAnimBox.TextSize = 14
-CustomAnimBox.Parent = AnimPage
-Instance.new("UICorner", CustomAnimBox).CornerRadius = UDim.new(0, 6)
-
-local PlayCustomBtn = Instance.new("TextButton")
-PlayCustomBtn.Size = UDim2.new(0.3, 0, 0, 32)
-PlayCustomBtn.Position = UDim2.new(0.7, 5, 0, 36)
-PlayCustomBtn.Text = "Play"
-PlayCustomBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 90)
-PlayCustomBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-PlayCustomBtn.Font = Enum.Font.SourceSansBold
-PlayCustomBtn.TextSize = 14
-PlayCustomBtn.Parent = AnimPage
-Instance.new("UICorner", PlayCustomBtn).CornerRadius = UDim.new(0, 6)
-
-PlayCustomBtn.MouseButton1Click:Connect(function()
-    local id = tonumber(CustomAnimBox.Text)
-    if id then
-        playAnim(id)
-    end
-end)
-
--- 3. Preset Animations Container
+-- 2. Scrolling Frame for Animation Packs
 local AnimScroll = Instance.new("ScrollingFrame")
-AnimScroll.Size = UDim2.new(1, 0, 1, -75)
-AnimScroll.Position = UDim2.new(0, 0, 0, 75)
+AnimScroll.Size = UDim2.new(1, 0, 1, -38)
+AnimScroll.Position = UDim2.new(0, 0, 0, 38)
 AnimScroll.BackgroundTransparency = 1
 AnimScroll.BorderSizePixel = 0
 AnimScroll.ScrollBarThickness = 4
@@ -711,22 +722,10 @@ AnimGrid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     AnimScroll.CanvasSize = UDim2.new(0, 0, 0, AnimGrid.AbsoluteContentSize.Y + 10)
 end)
 
-local animPresets = {
-    {Name = "Ninja Run", ID = 656118852},
-    {Name = "Zombie Idle", ID = 616158929},
-    {Name = "Levitation", ID = 616008087},
-    {Name = "Vampire Walk", ID = 1083445855},
-    {Name = "Superhero Fly", ID = 616117082},
-    {Name = "Sit Down", ID = 2506281703},
-    {Name = "Lay Down", ID = 313762630},
-    {Name = "Head Spin", ID = 188632011},
-    {Name = "Float Idle", ID = 616006778},
-    {Name = "Mage Float", ID = 708553116},
-}
-
-for _, data in ipairs(animPresets) do
+-- Loop to create buttons for all packs
+for packName, _ in pairs(AnimationPacks) do
     local btn = Instance.new("TextButton")
-    btn.Text = data.Name
+    btn.Text = packName
     btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.SourceSansBold
@@ -735,6 +734,6 @@ for _, data in ipairs(animPresets) do
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
     
     btn.MouseButton1Click:Connect(function()
-        playAnim(data.ID)
+        applyAnimationPack(packName)
     end)
 end
