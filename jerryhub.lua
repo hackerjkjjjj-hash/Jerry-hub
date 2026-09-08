@@ -669,48 +669,130 @@ local function applyAnimationPack(character, pack)
 
     local humanoid = character:FindFirstChildOfClass("Humanoid")
     local animate = character:FindFirstChild("Animate")
+    local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
 
-    if not humanoid or not animate then
+    if not humanoid or not animator then
         return false
     end
 
-    -- Wait briefly for Animate's folders/Animation objects to exist.
-    local idle = animate:FindFirstChild("idle") or animate:WaitForChild("idle", 3)
-    local walk = animate:FindFirstChild("walk") or animate:WaitForChild("walk", 3)
-    local run = animate:FindFirstChild("run") or animate:WaitForChild("run", 3)
-    local jump = animate:FindFirstChild("jump") or animate:WaitForChild("jump", 3)
-    local fall = animate:FindFirstChild("fall") or animate:WaitForChild("fall", 3)
-    local climb = animate:FindFirstChild("climb") or animate:WaitForChild("climb", 3)
-    local swim = animate:FindFirstChild("swim") or animate:WaitForChild("swim", 3)
-    local swimIdle = animate:FindFirstChild("swimidle") or animate:WaitForChild("swimidle", 3)
-
-    local changed = 0
-
-    if idle then
-        if setAnimationId(idle, "Animation1", pack.Idle) then changed += 1 end
-        if setAnimationId(idle, "Animation2", pack.Idle2 or pack.Idle) then changed += 1 end
-    end
-    if walk and setAnimationId(walk, "WalkAnim", pack.Walk) then changed += 1 end
-    if run and setAnimationId(run, "RunAnim", pack.Run) then changed += 1 end
-    if jump and setAnimationId(jump, "JumpAnim", pack.Jump) then changed += 1 end
-    if fall and setAnimationId(fall, "FallAnim", pack.Fall) then changed += 1 end
-    if climb and setAnimationId(climb, "ClimbAnim", pack.Climb) then changed += 1 end
-    if swim and setAnimationId(swim, "Swim", pack.Swim) then changed += 1 end
-    if swimIdle and setAnimationId(swimIdle, "SwimIdle", pack.SwimIdle or pack.Swim) then changed += 1 end
-
-    if changed == 0 then
-        return false
+    -- Stop/remove our previous controller.
+    local oldFolder = character:FindFirstChild("__JerryAnimationPack")
+    if oldFolder then
+        oldFolder:Destroy()
     end
 
-    stopCurrentAnimations(humanoid)
+    -- Disable Roblox's default Animate while this pack is active.
+    if animate then
+        animate.Enabled = false
+    end
 
-    -- Restart Animate so it reads the new AnimationIds.
-    local animateWasEnabled = animate.Enabled
-    animate.Enabled = false
-    task.wait()
-    animate.Enabled = animateWasEnabled
+    local folder = Instance.new("Folder")
+    folder.Name = "__JerryAnimationPack"
+    folder.Parent = character
 
-    return true
+    local tracks = {}
+    local function load(name, id, priority, looped)
+        if not id or id == "" then return end
+
+        local anim = Instance.new("Animation")
+        anim.Name = name
+        anim.AnimationId = id
+        anim.Parent = folder
+
+        local ok, track = pcall(function()
+            return animator:LoadAnimation(anim)
+        end)
+
+        if ok and track then
+            track.Priority = priority
+            track.Looped = looped
+            tracks[name] = track
+        end
+    end
+
+    load("Idle", pack.Idle, Enum.AnimationPriority.Idle, true)
+    load("Walk", pack.Walk, Enum.AnimationPriority.Movement, true)
+    load("Run", pack.Run or pack.Walk, Enum.AnimationPriority.Movement, true)
+    load("Jump", pack.Jump, Enum.AnimationPriority.Movement, false)
+    load("Fall", pack.Fall, Enum.AnimationPriority.Movement, true)
+    load("Climb", pack.Climb, Enum.AnimationPriority.Movement, true)
+    load("Swim", pack.Swim, Enum.AnimationPriority.Movement, true)
+    load("SwimIdle", pack.SwimIdle or pack.Swim, Enum.AnimationPriority.Movement, true)
+
+    local current
+    local stateConnection
+    local runningConnection
+
+    local function stopAll(fade)
+        for _, track in pairs(tracks) do
+            if track.IsPlaying then
+                track:Stop(fade or 0.12)
+            end
+        end
+    end
+
+    local function play(name, speed)
+        local track = tracks[name]
+        if not track then return end
+
+        if current ~= track then
+            stopAll(0.12)
+            current = track
+            track:Play(0.12, 1, speed or 1)
+        elseif speed then
+            track:AdjustSpeed(speed)
+        end
+    end
+
+    local function update()
+        local state = humanoid:GetState()
+        local moving = humanoid.MoveDirection.Magnitude > 0.05
+        local speed = humanoid.WalkSpeed
+
+        if state == Enum.HumanoidStateType.Jumping then
+            play("Jump", 1)
+        elseif state == Enum.HumanoidStateType.Freefall then
+            play("Fall", 1)
+        elseif state == Enum.HumanoidStateType.Climbing then
+            play("Climb", math.max(speed / 8, 0.5))
+        elseif state == Enum.HumanoidStateType.Swimming then
+            if moving then
+                play("Swim", math.max(speed / 8, 0.5))
+            else
+                play("SwimIdle", 1)
+            end
+        elseif moving then
+            -- adidas uses a distinct skate-style walk/run.
+            if speed >= 14 and tracks.Run then
+                play("Run", math.max(speed / 16, 0.5))
+            else
+                play("Walk", math.max(speed / 8, 0.5))
+            end
+        else
+            play("Idle", 1)
+        end
+    end
+
+    stateConnection = humanoid.StateChanged:Connect(function()
+        task.defer(update)
+    end)
+
+    runningConnection = humanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
+        task.defer(update)
+    end)
+
+    -- Clean up automatically if the character is removed.
+    local ancestryConnection
+    ancestryConnection = character.AncestryChanged:Connect(function(_, parent)
+        if parent then return end
+
+        if stateConnection then stateConnection:Disconnect() end
+        if runningConnection then runningConnection:Disconnect() end
+        if ancestryConnection then ancestryConnection:Disconnect() end
+    end)
+
+    update()
+    return next(tracks) ~= nil
 end
 
 local activeAnimationPack = nil
@@ -725,17 +807,19 @@ local function resetAnimations(character)
 
     local animate = character:FindFirstChild("Animate")
     local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local packFolder = character:FindFirstChild("__JerryAnimationPack")
 
     if humanoid then
         stopCurrentAnimations(humanoid)
     end
 
-    -- The cleanest reset is to let Roblox's current Animate script
-    -- restore its original IDs by respawning the character.
-    -- No character replacement is performed here.
+    if packFolder then
+        packFolder:Destroy()
+    end
+
     if animate then
         animate.Enabled = false
-        task.wait(0.05)
+        task.wait()
         animate.Enabled = true
     end
 end
