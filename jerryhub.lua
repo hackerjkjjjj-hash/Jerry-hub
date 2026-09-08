@@ -25,28 +25,25 @@ local UICorner = Instance.new("UICorner", MainFrame)
 UICorner.CornerRadius = UDim.new(0, 8)
 
 ---------------------------------------------------------
--- Circular Floating Toggle Button (អាចអូសបាន & មូលស្អាត)
+-- Circular Floating Toggle Button (ជាមួយ Texture ID ថ្មី)
 ---------------------------------------------------------
 local OpenButton = Instance.new("ImageButton")
 OpenButton.Name = "OpenButton"
 OpenButton.Size = UDim2.new(0, 50, 0, 50)
 OpenButton.Position = UDim2.new(0, 15, 0.5, -25)
-OpenButton.Image = "rbxassetid://131681030058686"
-OpenButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-OpenButton.BackgroundTransparency = 0.2
+OpenButton.Image = "rbxassetid://95612671006921"
+OpenButton.BackgroundTransparency = 1
 OpenButton.Active = true
-OpenButton.Draggable = true -- អាចអូសប៊ូតុងរង្វង់ទៅណាក៏បាន
+OpenButton.Draggable = true
 OpenButton.Parent = ScreenGui
 
 local openCorner = Instance.new("UICorner", OpenButton)
-openCorner.CornerRadius = UDim.new(1, 0) -- កំណត់ឲ្យចេញជារង្វង់មូល 100%
+openCorner.CornerRadius = UDim.new(1, 0)
 
--- បន្ថែមបន្ទាត់ព្រំរង្វង់ (Stroke) ឲ្យមើលទៅលេចស្អាត
 local openStroke = Instance.new("UIStroke", OpenButton)
 openStroke.Color = Color3.fromRGB(150, 0, 255)
 openStroke.Thickness = 2
 
--- Function ចុចបិទបើក Main Frame
 OpenButton.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
 end)
@@ -58,14 +55,14 @@ local MainLogo = Instance.new("ImageLabel")
 MainLogo.Name = "MainLogo"
 MainLogo.Size = UDim2.new(0, 35, 0, 35)
 MainLogo.Position = UDim2.new(0, 10, 0, 8)
-MainLogo.Image = "rbxassetid://74724530538319"
+MainLogo.Image = "rbxassetid://116252557083126"
 MainLogo.BackgroundTransparency = 1
 MainLogo.Parent = MainFrame
 
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(0, 200, 0, 35)
 Title.Position = UDim2.new(0, 50, 0, 8)
-Title.Text = "JERRY V1.0"
+Title.Text = "DELTA EXECUTOR"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Font = Enum.Font.SourceSansBold
