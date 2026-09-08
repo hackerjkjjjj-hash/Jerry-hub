@@ -607,35 +607,31 @@ for _, data in ipairs(emoteList) do
 end
 
 ---------------------------------------------------------
--- PAGE 5: ANIMATION PACKS (ZOMBIE ONLY - FIXED)
----------------------------------------------------------
+-- PAGE 5: ANIMATION PACKS (ZOMBIE - ANIMATE SCRIPT)
+-- Uses Roblox's documented Zombie animation assets and the character's
+-- existing Animate script. This avoids HumanoidDescription changes.
+
 local localPlayer = game:GetService("Players").LocalPlayer
--- =========================================================
--- Animation Packs (Animate Script Version)
--- =========================================================
 
 local AnimationPacks = {
     Zombie = {
-        Idle  = "rbxassetid://619535834",
-        Walk  = "rbxassetid://619537468",
-        Run   = "rbxassetid://619536621",
-        Jump  = "rbxassetid://619536283",
-        Fall  = "rbxassetid://619535616",
-        Climb = "rbxassetid://619535091",
-        Swim  = "rbxassetid://619537096",
+        Idle     = "rbxassetid://616158929",
+        Idle2    = "rbxassetid://616160636",
+        Walk     = "rbxassetid://616168032",
+        Run      = "rbxassetid://616163682",
+        Jump     = "rbxassetid://616161997",
+        Fall     = "rbxassetid://616157476",
+        Climb    = "rbxassetid://616156119",
+        Swim     = "rbxassetid://616165109",
+        SwimIdle = "rbxassetid://616166655",
     }
 }
 
-local currentAnimationPack = nil
-local savedDefaultAnimations = {}
+local zombieAnimationEnabled = false
+local respawnConnection = nil
 
--- Find Animation objects inside the player's Animate LocalScript.
-local function getAnimate(character)
-    if not character then return nil end
-    return character:FindFirstChild("Animate")
-end
-
-local function setAnimationId(obj, animationId)
+local function setAnimationId(parent, childName, animationId)
+    local obj = parent and parent:FindFirstChild(childName)
     if obj and obj:IsA("Animation") then
         obj.AnimationId = animationId
         return true
@@ -643,149 +639,122 @@ local function setAnimationId(obj, animationId)
     return false
 end
 
--- Save the original Animate IDs once, so Reset can restore them.
-local function saveDefaultAnimations(animate)
-    if savedDefaultAnimations[animate] then return end
-
-    local saved = {}
-    for _, obj in ipairs(animate:GetDescendants()) do
-        if obj:IsA("Animation") then
-            saved[obj] = obj.AnimationId
+local function stopCurrentAnimations(humanoid)
+    local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
+    if animator then
+        for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+            track:Stop(0.08)
         end
     end
-    savedDefaultAnimations[animate] = saved
 end
 
-local function refreshAnimate(animate)
-    if not animate then return end
-
-    -- Restart Animate so its currently playing tracks reload the new IDs.
-    local wasDisabled = animate.Disabled
-    pcall(function()
-        animate.Disabled = true
-    end)
-
-    task.wait()
-
-    pcall(function()
-        animate.Disabled = false
-    end)
-
-    if wasDisabled then
-        pcall(function()
-            animate.Disabled = true
-        end)
-    end
-end
-
-local function applyAnimationPack(packName)
-    local character = localPlayer.Character
-    if not character then return false end
+local function applyZombieAnimation(character)
+    if not character or not character.Parent then return false end
 
     local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return false end
+    local animate = character:FindFirstChild("Animate")
 
-    local animate = getAnimate(character)
-    if not animate then
-        warn("[Jerry Hub] Animate script was not found.")
+    if not humanoid or not animate then
         return false
     end
 
-    local pack = AnimationPacks[packName]
-    if not pack then return false end
+    local pack = AnimationPacks.Zombie
 
-    saveDefaultAnimations(animate)
-
-    -- R15 / R6 compatible: search by Animation object names.
+    -- Change the existing Animate slots instead of replacing the character.
     local idle = animate:FindFirstChild("idle")
-    if idle then
-        setAnimationId(idle:FindFirstChild("Animation1"), pack.Idle)
-        setAnimationId(idle:FindFirstChild("Animation2"), pack.Idle)
-    end
-
     local walk = animate:FindFirstChild("walk")
-    if walk then
-        setAnimationId(walk:FindFirstChild("WalkAnim"), pack.Walk)
-    end
-
     local run = animate:FindFirstChild("run")
-    if run then
-        setAnimationId(run:FindFirstChild("RunAnim"), pack.Run)
-    end
-
     local jump = animate:FindFirstChild("jump")
-    if jump then
-        setAnimationId(jump:FindFirstChild("JumpAnim"), pack.Jump)
-    end
-
     local fall = animate:FindFirstChild("fall")
-    if fall then
-        setAnimationId(fall:FindFirstChild("FallAnim"), pack.Fall)
-    end
-
     local climb = animate:FindFirstChild("climb")
-    if climb then
-        setAnimationId(climb:FindFirstChild("ClimbAnim"), pack.Climb)
-    end
-
     local swim = animate:FindFirstChild("swim")
-    if swim then
-        setAnimationId(swim:FindFirstChild("Swim"), pack.Swim)
-    end
-
     local swimIdle = animate:FindFirstChild("swimidle")
+
+    if idle then
+        setAnimationId(idle, "Animation1", pack.Idle)
+        setAnimationId(idle, "Animation2", pack.Idle2)
+    end
+
+    if walk then
+        setAnimationId(walk, "WalkAnim", pack.Walk)
+    end
+
+    if run then
+        setAnimationId(run, "RunAnim", pack.Run)
+    end
+
+    if jump then
+        setAnimationId(jump, "JumpAnim", pack.Jump)
+    end
+
+    if fall then
+        setAnimationId(fall, "FallAnim", pack.Fall)
+    end
+
+    if climb then
+        setAnimationId(climb, "ClimbAnim", pack.Climb)
+    end
+
+    if swim then
+        setAnimationId(swim, "Swim", pack.Swim)
+    end
+
     if swimIdle then
-        setAnimationId(swimIdle:FindFirstChild("SwimIdle"), pack.Idle)
+        setAnimationId(swimIdle, "SwimIdle", pack.SwimIdle)
     end
 
-    currentAnimationPack = packName
-    refreshAnimate(animate)
+    -- Let Animate reload the changed IDs without replacing the character.
+    stopCurrentAnimations(humanoid)
+
+    local animateWasEnabled = animate.Enabled
+    animate.Enabled = false
+    task.wait(0.05)
+    animate.Enabled = animateWasEnabled
 
     return true
 end
 
-local function resetAnimationPack()
-    local character = localPlayer.Character
-    if not character then return false end
+local function resetAnimations(character)
+    if not character or not character.Parent then return end
 
-    local animate = getAnimate(character)
-    if not animate then return false end
+    local animate = character:FindFirstChild("Animate")
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
 
-    local saved = savedDefaultAnimations[animate]
-    if saved then
-        for obj, originalId in pairs(saved) do
-            if obj and obj.Parent and obj:IsA("Animation") then
-                obj.AnimationId = originalId
-            end
-        end
+    if humanoid then
+        stopCurrentAnimations(humanoid)
     end
 
-    currentAnimationPack = nil
-    refreshAnimate(animate)
-
-    return true
+    -- The cleanest reset is to let Roblox's current Animate script
+    -- restore its original IDs by respawning the character.
+    -- No character replacement is performed here.
+    if animate then
+        animate.Enabled = false
+        task.wait(0.05)
+        animate.Enabled = true
+    end
 end
 
--- =========================================================
--- Respawn handler
--- Re-apply the selected pack after Roblox creates a new Animate.
--- =========================================================
+local function setupZombieOnCharacter(character)
+    if not zombieAnimationEnabled then return end
 
-localPlayer.CharacterAdded:Connect(function(character)
-    if not currentAnimationPack then return end
+    -- Animate may appear a little after CharacterAdded.
+    local animate = character:WaitForChild("Animate", 5)
+    if not animate then return end
 
-    task.spawn(function()
-        local animate = character:WaitForChild("Animate", 8)
-        local humanoid = character:WaitForChild("Humanoid", 8)
+    task.wait(0.1)
+    applyZombieAnimation(character)
+end
 
-        if animate and humanoid and currentAnimationPack then
-            task.wait(0.25)
-            applyAnimationPack(currentAnimationPack)
-        end
-    end)
+-- Re-apply Zombie animations after every respawn.
+if respawnConnection then
+    respawnConnection:Disconnect()
+end
+
+respawnConnection = localPlayer.CharacterAdded:Connect(function(character)
+    setupZombieOnCharacter(character)
 end)
 
--- 1. Reset / Default Animation Button
+-- Reset / Default Animation button
 local ResetAnimBtn = Instance.new("TextButton")
 ResetAnimBtn.Size = UDim2.new(1, 0, 0, 30)
 ResetAnimBtn.Position = UDim2.new(0, 0, 0, 0)
@@ -798,10 +767,15 @@ ResetAnimBtn.Parent = AnimPage
 Instance.new("UICorner", ResetAnimBtn).CornerRadius = UDim.new(0, 6)
 
 ResetAnimBtn.MouseButton1Click:Connect(function()
-    resetAnimationPack()
+    zombieAnimationEnabled = false
+
+    local character = localPlayer.Character
+    if character then
+        resetAnimations(character)
+    end
 end)
 
--- 2. Scrolling Frame for Animation Packs
+-- Scrolling Frame for Animation Packs
 local AnimScroll = Instance.new("ScrollingFrame")
 AnimScroll.Size = UDim2.new(1, 0, 1, -38)
 AnimScroll.Position = UDim2.new(0, 0, 0, 38)
@@ -819,7 +793,6 @@ AnimGrid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     AnimScroll.CanvasSize = UDim2.new(0, 0, 0, AnimGrid.AbsoluteContentSize.Y + 10)
 end)
 
--- Loop to create buttons
 for packName, _ in pairs(AnimationPacks) do
     local btn = Instance.new("TextButton")
     btn.Text = packName
@@ -831,15 +804,11 @@ for packName, _ in pairs(AnimationPacks) do
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
 
     btn.MouseButton1Click:Connect(function()
-        local success = applyAnimationPack(packName)
-        if success then
-            btn.Text = packName .. " ✓"
-            task.delay(1.2, function()
-                if btn and btn.Parent then
-                    btn.Text = packName
-                end
-            end)
+        zombieAnimationEnabled = true
+
+        local character = localPlayer.Character
+        if character then
+            applyZombieAnimation(character)
         end
     end)
 end
-
