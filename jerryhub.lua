@@ -278,78 +278,94 @@ RunService.RenderStepped:Connect(function()
 end)
 
 ---------------------------------------------------------
--- PAGE 2: PLAYER (GOTO Player, Avatar & Username)
+-- PAGE 2: PLAYER (បង្ហាញ Player ទាំងអស់ក្នុង Server)
 ---------------------------------------------------------
-local TargetBox = Instance.new("TextBox")
-TargetBox.Size = UDim2.new(1, 0, 0, 35)
-TargetBox.Position = UDim2.new(0, 0, 0, 0)
-TargetBox.PlaceholderText = "បញ្ចូល Username ឬ Nickname..."
-TargetBox.Text = ""
-TargetBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-TargetBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-TargetBox.Font = Enum.Font.SourceSans
-TargetBox.TextSize = 14
-TargetBox.Parent = PlayerPage
-Instance.new("UICorner", TargetBox).CornerRadius = UDim.new(0, 6)
+local PlayerScroll = Instance.new("ScrollingFrame")
+PlayerScroll.Size = UDim2.new(1, 0, 1, 0)
+PlayerScroll.BackgroundTransparency = 1
+PlayerScroll.BorderSizePixel = 0
+PlayerScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+PlayerScroll.ScrollBarThickness = 4
+PlayerScroll.Parent = PlayerPage
 
-local TargetAvatar = Instance.new("ImageLabel")
-TargetAvatar.Size = UDim2.new(0, 75, 0, 75)
-TargetAvatar.Position = UDim2.new(0, 0, 0, 45)
-TargetAvatar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-TargetAvatar.Image = ""
-TargetAvatar.Parent = PlayerPage
-Instance.new("UICorner", TargetAvatar).CornerRadius = UDim.new(0, 6)
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Parent = PlayerScroll
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 8)
 
-local TargetInfoLabel = Instance.new("TextLabel")
-TargetInfoLabel.Size = UDim2.new(1, -85, 0, 35)
-TargetInfoLabel.Position = UDim2.new(0, 85, 0, 45)
-TargetInfoLabel.Text = "Username: N/A"
-TargetInfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-TargetInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
-TargetInfoLabel.BackgroundTransparency = 1
-TargetInfoLabel.Font = Enum.Font.SourceSans
-TargetInfoLabel.TextSize = 15
-TargetInfoLabel.Parent = PlayerPage
-
-local GoToBtn = Instance.new("TextButton")
-GoToBtn.Size = UDim2.new(1, -85, 0, 35)
-GoToBtn.Position = UDim2.new(0, 85, 0, 85)
-GoToBtn.Text = "GoTo Player"
-GoToBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
-GoToBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-GoToBtn.Font = Enum.Font.SourceSansBold
-GoToBtn.TextSize = 15
-GoToBtn.Parent = PlayerPage
-Instance.new("UICorner", GoToBtn).CornerRadius = UDim.new(0, 6)
-
-local targetPlayer = nil
-
-TargetBox.FocusLost:Connect(function()
-    local search = TargetBox.Text:lower()
-    targetPlayer = nil
-    for _, p in pairs(Players:GetPlayers()) do
-        if p.Name:lower():sub(1, #search) == search or p.DisplayName:lower():sub(1, #search) == search then
-            targetPlayer = p
-            break
-        end
-    end
-    
-    if targetPlayer then
-        TargetInfoLabel.Text = "User: " .. targetPlayer.Name .. "\nNick: " .. targetPlayer.DisplayName
-        TargetAvatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. targetPlayer.UserId .. "&w=150&h=150"
-    else
-        TargetInfoLabel.Text = "User: រកមិនឃើញ"
-        TargetAvatar.Image = ""
-    end
+-- តម្រូវទំហំ Scrolling ស្វ័យប្រវត្តិតាមចំនួន Player
+UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    PlayerScroll.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
 end)
 
-GoToBtn.MouseButton1Click:Connect(function()
-    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            LocalPlayer.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+local function refreshPlayerList()
+    -- សម្អាត បញ្ជីចាស់ៗ
+    for _, item in pairs(PlayerScroll:GetChildren()) do
+        if item:IsA("Frame") then
+            item:Destroy()
         end
     end
-end)
+
+    -- បង្កើត Card សម្រាប់ Player ម្នាក់ៗក្នុង Server
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            local Card = Instance.new("Frame")
+            Card.Size = UDim2.new(1, -10, 0, 50)
+            Card.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+            Card.Parent = PlayerScroll
+            Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 6)
+
+            -- Avatar រូបថត Player
+            local Avatar = Instance.new("ImageLabel")
+            Avatar.Size = UDim2.new(0, 40, 0, 40)
+            Avatar.Position = UDim2.new(0, 5, 0, 5)
+            Avatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. plr.UserId .. "&w=150&h=150"
+            Avatar.BackgroundTransparency = 1
+            Avatar.Parent = Card
+            Instance.new("UICorner", Avatar).CornerRadius = UDim.new(1, 0)
+
+            -- ឈ្មោះ Username & Nickname
+            local InfoText = Instance.new("TextLabel")
+            InfoText.Size = UDim2.new(1, -135, 1, 0)
+            InfoText.Position = UDim2.new(0, 50, 0, 0)
+            InfoText.Text = plr.DisplayName .. "\n(@" .. plr.Name .. ")"
+            InfoText.TextColor3 = Color3.fromRGB(255, 255, 255)
+            InfoText.TextXAlignment = Enum.TextXAlignment.Left
+            InfoText.BackgroundTransparency = 1
+            InfoText.Font = Enum.Font.SourceSans
+            InfoText.TextSize = 13
+            InfoText.TextTruncate = Enum.TextTruncate.AtEnd
+            InfoText.Parent = Card
+
+            -- ប៊ូតុង GoTo សម្រាប់ Player ម្នាក់ៗ
+            local GoTo = Instance.new("TextButton")
+            GoTo.Size = UDim2.new(0, 70, 0, 30)
+            GoTo.Position = UDim2.new(1, -75, 0, 10)
+            GoTo.Text = "GoTo"
+            GoTo.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+            GoTo.TextColor3 = Color3.fromRGB(255, 255, 255)
+            GoTo.Font = Enum.Font.SourceSansBold
+            GoTo.TextSize = 14
+            GoTo.Parent = Card
+            Instance.new("UICorner", GoTo).CornerRadius = UDim.new(0, 6)
+
+            GoTo.MouseButton1Click:Connect(function()
+                if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        LocalPlayer.Character.HumanoidRootPart.CFrame = plr.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+                    end
+                end
+            end)
+        end
+    end
+end
+
+-- Update ស្វ័យប្រវត្តិពេលមាន Player ចូល ឬ ចេញពី Server
+Players.PlayerAdded:Connect(refreshPlayerList)
+Players.PlayerRemoving:Connect(refreshPlayerList)
+
+-- Refresh បញ្ជី Player លើកដំបូង
+refreshPlayerList()
 
 ---------------------------------------------------------
 -- PAGE 3: INFO (My Profile Account Details)
