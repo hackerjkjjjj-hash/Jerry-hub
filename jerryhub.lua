@@ -1,453 +1,354 @@
--- Jerry HUB Fixed for Delta Executor (Mobile & PC Friendly)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- លុប UI ចាស់ចោលបើមាន
-if PlayerGui:FindFirstChild("JerryHubUI") then
-    PlayerGui.JerryHubUI:Destroy()
-end
-
+-- Create Main ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "JerryHubUI"
-ScreenGui.Parent = PlayerGui
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Name = "DeltaCustomUI"
 ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = (game:GetService("CoreGui"):FindFirstChild("RobloxGui") and game:GetService("CoreGui")) or LocalPlayer:WaitForChild("PlayerGui")
 
--- Custom Drag Function (ដំណើរការល្អនៅលើទូរស័ព្ទ)
-local function makeDraggable(frame, handle)
-    handle = handle or frame
-    local dragging, dragInput, dragStart, startPos
-    
-    handle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
-    
-    handle.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-    
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-end
+-- Logo Button (Toggle Open/Close UI)
+local OpenButton = Instance.new("ImageButton")
+OpenButton.Name = "OpenButton"
+OpenButton.Size = UDim2.new(0, 50, 0, 50)
+OpenButton.Position = UDim2.new(0, 15, 0.5, -25)
+OpenButton.Image = "rbxassetid://131681030058686"
+OpenButton.BackgroundTransparency = 1
+OpenButton.Parent = ScreenGui
 
--- Button Menu (អូសបាន)
-local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Name = "ToggleBtn"
-ToggleBtn.Parent = ScreenGui
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-ToggleBtn.Position = UDim2.new(0, 20, 0, 100)
-ToggleBtn.Size = UDim2.new(0, 55, 0, 55)
-ToggleBtn.Font = Enum.Font.SourceSansBold
-ToggleBtn.Text = "JERRY"
-ToggleBtn.TextColor3 = Color3.fromRGB(255, 170, 0)
-ToggleBtn.TextSize = 14
-
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 12)
-UICorner.Parent = ToggleBtn
-makeDraggable(ToggleBtn, ToggleBtn)
-
--- Main Frame (អូសបាន)
+-- Main UI Frame (Draggable)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
+MainFrame.Size = UDim2.new(0, 480, 0, 320)
+MainFrame.Position = UDim2.new(0.5, -240, 0.5, -160)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MainFrame.Position = UDim2.new(0.5, -175, 0.5, -200)
-MainFrame.Size = UDim2.new(0, 350, 0, 400)
-MainFrame.Visible = false
+MainFrame.BorderSizePixel = 0
+MainFrame.Visible = true
+MainFrame.Active = true
+MainFrame.Draggable = true -- អាចអូស UI បាន
+MainFrame.Parent = ScreenGui
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 12)
-MainCorner.Parent = MainFrame
+local UICorner = Instance.new("UICorner", MainFrame)
+UICorner.CornerRadius = UDim.new(0, 8)
+
+-- Top Header Logo & Title
+local MainLogo = Instance.new("ImageLabel")
+MainLogo.Name = "MainLogo"
+MainLogo.Size = UDim2.new(0, 35, 0, 35)
+MainLogo.Position = UDim2.new(0, 10, 0, 8)
+MainLogo.Image = "rbxassetid://74724530538319"
+MainLogo.BackgroundTransparency = 1
+MainLogo.Parent = MainFrame
 
 local Title = Instance.new("TextLabel")
-Title.Parent = MainFrame
-Title.BackgroundTransparency = 1
-Title.Position = UDim2.new(0, 0, 0, 10)
-Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Size = UDim2.new(0, 200, 0, 35)
+Title.Position = UDim2.new(0, 50, 0, 8)
+Title.Text = "DELTA EXECUTOR"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Font = Enum.Font.SourceSansBold
-Title.Text = "JERRY HUB"
-Title.TextColor3 = Color3.fromRGB(255, 170, 0)
 Title.TextSize = 18
-makeDraggable(MainFrame, Title)
+Title.BackgroundTransparency = 1
+Title.Parent = MainFrame
 
-ToggleBtn.MouseButton1Click:Connect(function()
+-- Toggle UI Function
+OpenButton.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
 end)
 
--- Tab Buttons Container
-local tabContainer = Instance.new("Frame")
-tabContainer.Parent = MainFrame
-tabContainer.BackgroundTransparency = 1
-tabContainer.Position = UDim2.new(0, 15, 0, 45)
-tabContainer.Size = UDim2.new(1, -30, 0, 35)
+-- Sidebar Section
+local Sidebar = Instance.new("Frame")
+Sidebar.Size = UDim2.new(0, 110, 1, -50)
+Sidebar.Position = UDim2.new(0, 0, 0, 50)
+Sidebar.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+Sidebar.BorderSizePixel = 0
+Sidebar.Parent = MainFrame
 
-local function createTabBtn(name, posX)
+-- Container for Pages
+local PageContainer = Instance.new("Frame")
+PageContainer.Size = UDim2.new(1, -125, 1, -60)
+PageContainer.Position = UDim2.new(0, 120, 0, 55)
+PageContainer.BackgroundTransparency = 1
+PageContainer.Parent = MainFrame
+
+-- Page Instances
+local HomePage = Instance.new("Frame", PageContainer)
+HomePage.Size = UDim2.new(1, 0, 1, 0)
+HomePage.BackgroundTransparency = 1
+HomePage.Visible = true
+
+local PlayerPage = Instance.new("Frame", PageContainer)
+PlayerPage.Size = UDim2.new(1, 0, 1, 0)
+PlayerPage.BackgroundTransparency = 1
+PlayerPage.Visible = false
+
+local InfoPage = Instance.new("Frame", PageContainer)
+InfoPage.Size = UDim2.new(1, 0, 1, 0)
+InfoPage.BackgroundTransparency = 1
+InfoPage.Visible = false
+
+local function hideAllPages()
+    HomePage.Visible = false
+    PlayerPage.Visible = false
+    InfoPage.Visible = false
+end
+
+-- Tab Button Generator
+local function createTabBtn(name, pos, page)
     local btn = Instance.new("TextButton")
-    btn.Parent = tabContainer
+    btn.Size = UDim2.new(1, -10, 0, 35)
+    btn.Position = UDim2.new(0, 5, 0, pos)
+    btn.Text = name
     btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    btn.Position = UDim2.new(posX, 0, 0, 0)
-    btn.Size = UDim2.new(0.31, 0, 1, 0)
-    btn.Font = Enum.Font.SourceSansBold
-    btn.Text = name
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 14
-    local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, 6)
-    c.Parent = btn
-    return btn
-end
-
-local hackTabBtn = createTabBtn("Hacks", 0)
-local playerTabBtn = createTabBtn("Players", 0.345)
-local infoTabBtn = createTabBtn("Profile", 0.69)
-
--- Pages Container
-local pagesContainer = Instance.new("Frame")
-pagesContainer.Parent = MainFrame
-pagesContainer.BackgroundTransparency = 1
-pagesContainer.Position = UDim2.new(0, 15, 0, 90)
-pagesContainer.Size = UDim2.new(1, -30, 1, -100)
-
--- Page 1: Hacks (Noclip, Fly)
-local hackPage = Instance.new("ScrollingFrame")
-hackPage.Parent = pagesContainer
-hackPage.BackgroundTransparency = 1
-hackPage.Size = UDim2.new(1, 0, 1, 0)
-hackPage.CanvasSize = UDim2.new(0, 0, 0, 200)
-hackPage.ScrollBarThickness = 2
-hackPage.Visible = true
-
-local function createButton(name, posY, parent)
-    local btn = Instance.new("TextButton")
-    btn.Parent = parent
-    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    btn.Position = UDim2.new(0.05, 0, 0, posY)
-    btn.Size = UDim2.new(0.9, 0, 0, 45)
     btn.Font = Enum.Font.SourceSansBold
-    btn.Text = name
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 16
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = btn
-    return btn
-end
-
--- Noclip Function - Improved
-local noclipEnabled = false
-local noclipConnection
-
-local function setNoclip(enabled)
-    noclipEnabled = enabled
-
-    if noclipConnection then
-        noclipConnection:Disconnect()
-        noclipConnection = nil
-    end
-
-    if enabled then
-        noclipConnection = RunService.Stepped:Connect(function()
-            local character = LocalPlayer.Character
-            if not character then return end
-
-            for _, obj in ipairs(character:GetDescendants()) do
-                if obj:IsA("BasePart") then
-                    obj.CanCollide = false
-                    obj.CanTouch = false
-                end
-            end
-        end)
-    else
-        local character = LocalPlayer.Character
-        if character then
-            for _, obj in ipairs(character:GetDescendants()) do
-                if obj:IsA("BasePart") then
-                    obj.CanCollide = true
-                    obj.CanTouch = true
-                end
-            end
-        end
-    end
-end
-
-local noclipBtn = createButton("Noclip: OFF", 10, hackPage)
-
-noclipBtn.MouseButton1Click:Connect(function()
-    setNoclip(not noclipEnabled)
-
-    if noclipEnabled then
-        noclipBtn.Text = "Noclip: ON"
-        noclipBtn.TextColor3 = Color3.fromRGB(0, 255, 0)
-    else
-        noclipBtn.Text = "Noclip: OFF"
-        noclipBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    end
-end)
-
-LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(0.5)
-    if noclipEnabled then
-        setNoclip(true)
-    end
-end)
-
--- Infinite Yield Style Fly System for Delta Executor
-local LocalPlayer = game.Players.LocalPlayer
-local RunService = game:GetService("RunService")
-
-local flying = false
-local flySpeed = 50
-local flyConnection
-local bV, bG
-
-local flyBtn = createButton("Fly: OFF", 65, hackPage)
-
-local function stopFly()
-    flying = false
-
-    if flyConnection then
-        flyConnection:Disconnect()
-        flyConnection = nil
-    end
-
-    if bV then bV:Destroy() bV = nil end
-    if bG then bG:Destroy() bG = nil end
-
-    local character = LocalPlayer.Character
-    if character then
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid.PlatformStand = false
-        end
-    end
-end
-
-local function startFly()
-    local character = LocalPlayer.Character
-    if not character then return end
-
-    local root = character:FindFirstChild("HumanoidRootPart")
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-
-    if not root or not humanoid then return end
-
-    flying = true
-    humanoid.PlatformStand = true
-
-    -- បង្កើត BodyVelocity និង BodyGyro ទម្រង់បែប Infinite Yield
-    bV = Instance.new("BodyVelocity")
-    bV.Name = "IY_BodyVelocity"
-    bV.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-    bV.Velocity = Vector3.zero
-    bV.Parent = root
-
-    bG = Instance.new("BodyGyro")
-    bG.Name = "IY_BodyGyro"
-    bG.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-    bG.P = 15000
-    bG.CFrame = root.CFrame
-    bG.Parent = root
-
-    flyConnection = RunService.RenderStepped:Connect(function()
-        if not flying then 
-            stopFly()
-            return 
-        end
-
-        local currentCharacter = LocalPlayer.Character
-        if not currentCharacter then
-            stopFly()
-            return
-        end
-
-        local currentRoot = currentCharacter:FindFirstChild("HumanoidRootPart")
-        local currentHumanoid = currentCharacter:FindFirstChildOfClass("Humanoid")
-        local camera = workspace.CurrentCamera
-
-        if not currentRoot or not currentHumanoid or not camera then
-            stopFly()
-            return
-        end
-
-        local moveDirection = currentHumanoid.MoveDirection
-        local camCFrame = camera.CFrame
-        local velocity = Vector3.zero
-
-        -- គណនាទិសដៅរលូនស្រដៀង Infinite Yield (តាម Joystick និង កាមេរ៉ា)
-        if moveDirection.Magnitude > 0 then
-            velocity = (camCFrame.LookVector * moveDirection.Z + camCFrame.RightVector * moveDirection.X) * flySpeed
-            -- បន្ថែមការងើបឡើង/ចុះក្រោមតាមទិសដៅកាមេរ៉ា
-            velocity = Vector3.new(velocity.X, camCFrame.LookVector.Y * moveDirection.Magnitude * flySpeed, velocity.Z)
-        else
-            velocity = Vector3.zero
-        end
-
-        bV.Velocity = velocity
-        bG.CFrame = camCFrame
+    btn.TextSize = 15
+    btn.Parent = Sidebar
+    
+    local corner = Instance.new("UICorner", btn)
+    corner.CornerRadius = UDim.new(0, 6)
+    
+    btn.MouseButton1Click:Connect(function()
+        hideAllPages()
+        page.Visible = true
     end)
 end
 
-flyBtn.MouseButton1Click:Connect(function()
-    if flying then
-        stopFly()
-        flyBtn.Text = "Fly: OFF"
-        flyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    else
-        startFly()
-        if flying then
-            flyBtn.Text = "Fly: ON"
-            flyBtn.TextColor3 = Color3.fromRGB(0, 255, 0)
-        end
-    end
-end)
+createTabBtn("Home", 10, HomePage)
+createTabBtn("Player", 50, PlayerPage)
+createTabBtn("Info", 90, InfoPage)
 
-LocalPlayer.CharacterAdded:Connect(function()
-    stopFly()
-    task.wait(0.5)
-    flyBtn.Text = "Fly: OFF"
-    flyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-end)
+---------------------------------------------------------
+-- PAGE 1: HOME (Noclip, Fly, ESP Box Line)
+---------------------------------------------------------
+local function createToggleBtn(parent, text, pos, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 35)
+    btn.Position = UDim2.new(0, 0, 0, pos)
+    btn.Text = text .. " [OFF]"
+    btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.SourceSans
+    btn.TextSize = 15
+    btn.Parent = parent
+    
+    local corner = Instance.new("UICorner", btn)
+    corner.CornerRadius = UDim.new(0, 6)
+    
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.Text = text .. (state and " [ON]" or " [OFF]")
+        btn.BackgroundColor3 = state and Color3.fromRGB(0, 170, 100) or Color3.fromRGB(45, 45, 45)
+        callback(state)
+    end)
+end
 
--- Page 2: Players List (Avatar + Teleport)
-local playerPage = Instance.new("ScrollingFrame")
-playerPage.Parent = pagesContainer
-playerPage.BackgroundTransparency = 1
-playerPage.Size = UDim2.new(1, 0, 1, 0)
-playerPage.CanvasSize = UDim2.new(0, 0, 0, 0)
-playerPage.ScrollBarThickness = 4
-playerPage.Visible = false
+-- 1. Noclip Logic (Optimized & Smooth)
+local noclipEnabled = false
+local noclipConnection = nil
 
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Parent = playerPage
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Padding = UDim.new(0, 6)
-
-local function updatePlayerList()
-    for _, child in pairs(playerPage:GetChildren()) do
-        if child:IsA("TextButton") then
-            child:Destroy()
-        end
-    end
-
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            local pBtn = Instance.new("TextButton")
-            pBtn.Parent = playerPage
-            pBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-            pBtn.Size = UDim2.new(1, 0, 0, 45)
-            pBtn.Font = Enum.Font.SourceSansBold
-            pBtn.Text = "       " .. player.Name
-            pBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            pBtn.TextSize = 14
-            pBtn.TextXAlignment = Enum.TextXAlignment.Left
-
-            local pCornerBtn = Instance.new("UICorner")
-            pCornerBtn.CornerRadius = UDim.new(0, 8)
-            pCornerBtn.Parent = pBtn
-
-            local avatarImg = Instance.new("ImageLabel")
-            avatarImg.Parent = pBtn
-            avatarImg.BackgroundTransparency = 1
-            avatarImg.Position = UDim2.new(0, 5, 0.5, -17)
-            avatarImg.Size = UDim2.new(0, 34, 0, 34)
-            
-            local success, url = pcall(function()
-                return Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
-            end)
-            if success then
-                avatarImg.Image = url
-            end
-
-            pBtn.MouseButton1Click:Connect(function()
-                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    LocalPlayer.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+local function toggleNoclip(state)
+    noclipEnabled = state
+    
+    if noclipEnabled then
+        -- បើក Noclip: ដំណើរការ Loop កាត់បន្ថយការ Lag
+        if not noclipConnection then
+            noclipConnection = RunService.Stepped:Connect(function()
+                local char = LocalPlayer.Character
+                if char then
+                    for _, part in ipairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
                 end
             end)
         end
+    else
+        -- បិទ Noclip: ផ្ដាច់ Loop និងកំណត់ CanCollide មកធម្មតាវិញ
+        if noclipConnection then
+            noclipConnection:Disconnect()
+            noclipConnection = nil
+        end
+        
+        local char = LocalPlayer.Character
+        if char then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    if part.Name == "HumanoidRootPart" or part.Name == "UpperTorso" or part.Name == "LowerTorso" or part.Name == "Torso" or part.Name == "Head" then
+                        part.CanCollide = true
+                    end
+                end
+            end
+        end
     end
-    playerPage.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
 end
 
-Players.PlayerAdded:Connect(updatePlayerList)
-Players.PlayerRemoving:Connect(updatePlayerList)
-updatePlayerList()
-
--- Page 3: Profile Info Page (Avatar, Username, Nickname, ID)
-local infoPage = Instance.new("Frame")
-infoPage.Parent = pagesContainer
-infoPage.BackgroundTransparency = 1
-infoPage.Size = UDim2.new(1, 0, 1, 0)
-infoPage.Visible = false
-
-local myAvatar = Instance.new("ImageLabel")
-myAvatar.Parent = infoPage
-myAvatar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-myAvatar.Position = UDim2.new(0.5, -45, 0, 10)
-myAvatar.Size = UDim2.new(0, 90, 0, 90)
-local avatarCorner = Instance.new("UICorner")
-avatarCorner.CornerRadius = UDim.new(1, 0)
-avatarCorner.Parent = myAvatar
-
-pcall(function()
-    myAvatar.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+createToggleBtn(HomePage, "Noclip", 0, function(state)
+    toggleNoclip(state)
 end)
 
-local function createInfoLabel(textVal, posY)
-    local lbl = Instance.new("TextLabel")
-    lbl.Parent = infoPage
-    lbl.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    lbl.Position = UDim2.new(0.05, 0, 0, posY)
-    lbl.Size = UDim2.new(0.9, 0, 0, 40)
-    lbl.Font = Enum.Font.SourceSansBold
-    lbl.Text = textVal
-    lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-    lbl.TextSize = 14
-    local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, 8)
-    c.Parent = lbl
-    return lbl
-end
-
-createInfoLabel(" Username: " .. LocalPlayer.Name, 115)
-createInfoLabel(" Nickname: " .. LocalPlayer.DisplayName, 165)
-createInfoLabel(" ID Account: " .. tostring(LocalPlayer.UserId), 215)
-
--- Tab Switch Logic
-local function switchTab(activeTab)
-    hackPage.Visible = (activeTab == hackPage)
-    playerPage.Visible = (activeTab == playerPage)
-    infoPage.Visible = (activeTab == infoPage)
-
-    hackTabBtn.BackgroundColor3 = (activeTab == hackPage) and Color3.fromRGB(255, 170, 0) or Color3.fromRGB(40, 40, 40)
-    playerTabBtn.BackgroundColor3 = (activeTab == playerPage) and Color3.fromRGB(255, 170, 0) or Color3.fromRGB(40, 40, 40)
-    infoTabBtn.BackgroundColor3 = (activeTab == infoPage) and Color3.fromRGB(255, 170, 0) or Color3.fromRGB(40, 40, 40)
+-- 2. Fly Logic
+local flyEnabled = false
+local flyBV, flyBG
+createToggleBtn(HomePage, "Fly", 45, function(state)
+    flyEnabled = state
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
     
-    hackTabBtn.TextColor3 = (activeTab == hackPage) and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(255, 255, 255)
-    playerTabBtn.TextColor3 = (activeTab == playerPage) and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(255, 255, 255)
-    infoTabBtn.TextColor3 = (activeTab == infoPage) and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(255, 255, 255)
-end
+    if flyEnabled and hrp then
+        flyBV = Instance.new("BodyVelocity", hrp)
+        flyBV.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+        flyBV.Velocity = Vector3.zero
+        
+        flyBG = Instance.new("BodyGyro", hrp)
+        flyBG.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+        flyBG.CFrame = hrp.CFrame
+    else
+        if flyBV then flyBV:Destroy() end
+        if flyBG then flyBG:Destroy() end
+    end
+end)
 
-hackTabBtn.MouseButton1Click:Connect(function() switchTab(hackPage) end)
-playerTabBtn.MouseButton1Click:Connect(function() switchTab(playerPage) end)
-infoTabBtn.MouseButton1Click:Connect(function() switchTab(infoPage) end)
+RunService.RenderStepped:Connect(function()
+    if flyEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = LocalPlayer.Character.HumanoidRootPart
+        local cam = workspace.CurrentCamera
+        local moveDir = Vector3.zero
+        
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
+        
+        if flyBV then flyBV.Velocity = moveDir * 50 end
+        if flyBG then flyBG.CFrame = cam.CFrame end
+    end
+end)
 
-switchTab(hackPage)
+-- 3. ESP Box Line Logic
+local espEnabled = false
+local espFolder = Instance.new("Folder", ScreenGui)
+espFolder.Name = "ESPFolder"
+
+createToggleBtn(HomePage, "ESP Box Line", 90, function(state)
+    espEnabled = state
+    if not espEnabled then
+        espFolder:ClearAllChildren()
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if not espEnabled then return end
+    espFolder:ClearAllChildren()
+    
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            local highlight = Instance.new("Highlight")
+            highlight.Adornee = plr.Character
+            highlight.FillColor = Color3.fromRGB(255, 50, 50)
+            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+            highlight.Parent = espFolder
+        end
+    end
+end)
+
+---------------------------------------------------------
+-- PAGE 2: PLAYER (GOTO Player, Avatar & Username)
+---------------------------------------------------------
+local TargetBox = Instance.new("TextBox")
+TargetBox.Size = UDim2.new(1, 0, 0, 35)
+TargetBox.Position = UDim2.new(0, 0, 0, 0)
+TargetBox.PlaceholderText = "បញ្ចូល Username ឬ Nickname..."
+TargetBox.Text = ""
+TargetBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+TargetBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+TargetBox.Font = Enum.Font.SourceSans
+TargetBox.TextSize = 14
+TargetBox.Parent = PlayerPage
+Instance.new("UICorner", TargetBox).CornerRadius = UDim.new(0, 6)
+
+local TargetAvatar = Instance.new("ImageLabel")
+TargetAvatar.Size = UDim2.new(0, 75, 0, 75)
+TargetAvatar.Position = UDim2.new(0, 0, 0, 45)
+TargetAvatar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+TargetAvatar.Image = ""
+TargetAvatar.Parent = PlayerPage
+Instance.new("UICorner", TargetAvatar).CornerRadius = UDim.new(0, 6)
+
+local TargetInfoLabel = Instance.new("TextLabel")
+TargetInfoLabel.Size = UDim2.new(1, -85, 0, 35)
+TargetInfoLabel.Position = UDim2.new(0, 85, 0, 45)
+TargetInfoLabel.Text = "Username: N/A"
+TargetInfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TargetInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+TargetInfoLabel.BackgroundTransparency = 1
+TargetInfoLabel.Font = Enum.Font.SourceSans
+TargetInfoLabel.TextSize = 15
+TargetInfoLabel.Parent = PlayerPage
+
+local GoToBtn = Instance.new("TextButton")
+GoToBtn.Size = UDim2.new(1, -85, 0, 35)
+GoToBtn.Position = UDim2.new(0, 85, 0, 85)
+GoToBtn.Text = "GoTo Player"
+GoToBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+GoToBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+GoToBtn.Font = Enum.Font.SourceSansBold
+GoToBtn.TextSize = 15
+GoToBtn.Parent = PlayerPage
+Instance.new("UICorner", GoToBtn).CornerRadius = UDim.new(0, 6)
+
+local targetPlayer = nil
+
+TargetBox.FocusLost:Connect(function()
+    local search = TargetBox.Text:lower()
+    targetPlayer = nil
+    for _, p in pairs(Players:GetPlayers()) do
+        if p.Name:lower():sub(1, #search) == search or p.DisplayName:lower():sub(1, #search) == search then
+            targetPlayer = p
+            break
+        end
+    end
+    
+    if targetPlayer then
+        TargetInfoLabel.Text = "User: " .. targetPlayer.Name .. "\nNick: " .. targetPlayer.DisplayName
+        TargetAvatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. targetPlayer.UserId .. "&w=150&h=150"
+    else
+        TargetInfoLabel.Text = "User: រកមិនឃើញ"
+        TargetAvatar.Image = ""
+    end
+end)
+
+GoToBtn.MouseButton1Click:Connect(function()
+    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+        end
+    end
+end)
+
+---------------------------------------------------------
+-- PAGE 3: INFO (My Profile Account Details)
+---------------------------------------------------------
+local MyAvatar = Instance.new("ImageLabel")
+MyAvatar.Size = UDim2.new(0, 85, 0, 85)
+MyAvatar.Position = UDim2.new(0, 0, 0, 10)
+MyAvatar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+MyAvatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=150&h=150"
+MyAvatar.Parent = InfoPage
+Instance.new("UICorner", MyAvatar).CornerRadius = UDim.new(0, 8)
+
+local MyInfoText = Instance.new("TextLabel")
+MyInfoText.Size = UDim2.new(1, -95, 0, 85)
+MyInfoText.Position = UDim2.new(0, 95, 0, 10)
+MyInfoText.Text = "Username: " .. LocalPlayer.Name .. "\nNickname: " .. LocalPlayer.DisplayName .. "\nAccount ID: " .. LocalPlayer.UserId
+MyInfoText.TextColor3 = Color3.fromRGB(255, 255, 255)
+MyInfoText.TextXAlignment = Enum.TextXAlignment.Left
+MyInfoText.TextYAlignment = Enum.TextYAlignment.Top
+MyInfoText.BackgroundTransparency = 1
+MyInfoText.Font = Enum.Font.SourceSans
+MyInfoText.TextSize = 16
+MyInfoText.Parent = InfoPage
