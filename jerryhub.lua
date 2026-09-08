@@ -588,21 +588,7 @@ UIGrid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 end)
 
 local emoteList = {
-    {Name = "Floss", ID = 5915773155},
-    {Name = "Dab", ID = 2743286196},
-    {Name = "Stadium", ID = 3337966581},
-    {Name = "Tilt", ID = 3337973718},
-    {Name = "Shrug", ID = 3337969828},
-    {Name = "Point", ID = 3337968369},
-    {Name = "Salute", ID = 3338025257},
-    {Name = "Wave", ID = 3338026826},
-    {Name = "Cheer", ID = 3338002931},
-    {Name = "Laugh", ID = 3338008828},
-    {Name = "Dance 1", ID = 3337985387},
-    {Name = "Dance 2", ID = 3337988892},
-    {Name = "Dance 3", ID = 3337994332},
-    {Name = "Zombie", ID = 3338018241},
-    {Name = "Infinite", ID = 10714340552},
+    {Name = "Coming Soon", ID = 5915773155},
 }
 
 for _, data in ipairs(emoteList) do
@@ -621,29 +607,24 @@ for _, data in ipairs(emoteList) do
 end
 
 ---------------------------------------------------------
--- PAGE 5: ANIMATION PACKS
+-- PAGE 5: ANIMATION PACKS (ZOMBIE ONLY)
 ---------------------------------------------------------
+local localPlayer = game:GetService("Players").LocalPlayer
+
 local AnimationPacks = {
-    Ninja = { Swim = 658832807, Idle = 658832408, Jump = 658832070, Fall = 658831500, Walk = 658831143, Run = 658830056, Climb = 658833139 },
-    Cartoony = { Swim = 837012509, Idle = 837011741, Jump = 837011171, Fall = 837010685, Walk = 837010234, Run = 837009922, Climb = 837013990 },
-    Levitation = { Swim = 619543721, Idle = 619542203, Jump = 619542888, Fall = 619541867, Walk = 619544080, Run = 619543231, Climb = 619541458 },
-    Stylish = { Swim = 619512450, Idle = 619511648, Jump = 619511974, Fall = 619511417, Walk = 619512767, Run = 619512153, Climb = 619509955 },
-    Vampire = { Swim = 1113742944, Idle = 1113742618, Jump = 1113742359, Fall = 1113742092, Walk = 1113741192, Run = 1113740510, Climb = 1113743239 },
-    Robot = { Swim = 619522642, Idle = 619521748, Jump = 619522088, Fall = 619521521, Walk = 619522849, Run = 619522386, Climb = 619521311 },
-    Toy = { Swim = 973772659, Idle = 973771666, Jump = 973770652, Fall = 973768058, Walk = 973767371, Run = 973766674, Climb = 973773170 },
-    Bubbly = { Swim = 1018554245, Idle = 1018553897, Jump = 1018553240, Fall = 1018552770, Walk = 1018549681, Run = 1018548665, Climb = 1018554668 },
-    Zombie = { Swim = 619537096, Idle = 619535834, Jump = 619536283, Fall = 619535616, Walk = 619537468, Run = 619536621, Climb = 619535091 },
-    Elder = { Swim = 892268710, Idle = 892268340, Jump = 892267917, Fall = 892267521, Walk = 892267099, Run = 892265784, Climb = 892269341 },
-    Superhero = { Swim = 619529095, Idle = 619528125, Jump = 619528412, Fall = 619527817, Walk = 619529601, Run = 619528716, Climb = 619527470 },
-    Werewolf = { Swim = 1113752975, Idle = 1113752682, Jump = 1113752285, Fall = 1113751889, Walk = 1113751657, Run = 1113750642, Climb = 1113754738 },
-    Mage = { Swim = 754638471, Idle = 754637456, Jump = 754637084, Fall = 754636589, Walk = 754636298, Run = 754635032, Climb = 754639239 },
-    Astronaut = { Swim = 1090133583, Idle = 1090133099, Jump = 1090132507, Fall = 1090132063, Walk = 1090131576, Run = 1090130630, Climb = 1090134016 },
-    Pirate = { Swim = 837025054, Idle = 837024662, Jump = 837024350, Fall = 837024147, Walk = 837023892, Run = 837023444, Climb = 837025325 },
-    Knight = { Swim = 734327363, Idle = 734327140, Jump = 734326930, Fall = 734326679, Walk = 734326330, Run = 734325948, Climb = 734329002 }
+    Zombie = { 
+        Swim = 619537096, 
+        Idle = 619535834, 
+        Jump = 619536283, 
+        Fall = 619535616, 
+        Walk = 619537468, 
+        Run = 619536621, 
+        Climb = 619535091 
+    }
 }
 
 local function applyAnimationPack(packName)
-    local char = LocalPlayer.Character
+    local char = localPlayer.Character
     if not char then return end
     
     local pack = AnimationPacks[packName]
@@ -674,6 +655,11 @@ local function applyAnimationPack(packName)
         if animateScript:FindFirstChild("swim") and animateScript.swim:FindFirstChild("Swim") then
             animateScript.swim.Swim.AnimationId = "rbxassetid://" .. pack.Swim
         end
+        
+        -- បិទនិងបើក Animate Script វិញដើម្បីឱ្យវា Refresh ដំណើរការភ្លាមៗ
+        animateScript.Disabled = true
+        task.wait(0.1)
+        animateScript.Disabled = false
     end
 end
 
@@ -690,15 +676,14 @@ ResetAnimBtn.Parent = AnimPage
 Instance.new("UICorner", ResetAnimBtn).CornerRadius = UDim.new(0, 6)
 
 ResetAnimBtn.MouseButton1Click:Connect(function()
-    local char = LocalPlayer.Character
+    local char = localPlayer.Character
     if char then
         local humanoid = char:FindFirstChildOfClass("Humanoid")
         if humanoid then
-            -- Reset character to reload default animations
             local currentPos = char:GetPrimaryPartCFrame()
-            LocalPlayer.Character = nil
+            localPlayer.Character = nil
             task.wait(0.1)
-            LocalPlayer.Character = char
+            localPlayer.Character = char
             char:SetPrimaryPartCFrame(currentPos)
         end
     end
@@ -722,7 +707,7 @@ AnimGrid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     AnimScroll.CanvasSize = UDim2.new(0, 0, 0, AnimGrid.AbsoluteContentSize.Y + 10)
 end)
 
--- Loop to create buttons for all packs
+-- Loop to create buttons (ഇนಲ್ಲಿបង្កើតតែប៊ូតុង Zombie មួយគត់)
 for packName, _ in pairs(AnimationPacks) do
     local btn = Instance.new("TextButton")
     btn.Text = packName
