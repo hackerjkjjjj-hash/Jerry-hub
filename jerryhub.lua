@@ -9,16 +9,7 @@ ScreenGui.Name = "DeltaCustomUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = (game:GetService("CoreGui"):FindFirstChild("RobloxGui") and game:GetService("CoreGui")) or LocalPlayer:WaitForChild("PlayerGui")
 
--- Logo Button (Toggle Open/Close UI)
-local OpenButton = Instance.new("ImageButton")
-OpenButton.Name = "OpenButton"
-OpenButton.Size = UDim2.new(0, 50, 0, 50)
-OpenButton.Position = UDim2.new(0, 15, 0.5, -25)
-OpenButton.Image = "rbxassetid://131681030058686"
-OpenButton.BackgroundTransparency = 1
-OpenButton.Parent = ScreenGui
-
--- Main UI Frame (Draggable)
+-- Main UI Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 480, 0, 320)
@@ -27,13 +18,42 @@ MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.Visible = true
 MainFrame.Active = true
-MainFrame.Draggable = true -- អាចអូស UI បាន
+MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
 local UICorner = Instance.new("UICorner", MainFrame)
 UICorner.CornerRadius = UDim.new(0, 8)
 
--- Top Header Logo & Title
+---------------------------------------------------------
+-- Circular Floating Toggle Button (អាចអូសបាន & មូលស្អាត)
+---------------------------------------------------------
+local OpenButton = Instance.new("ImageButton")
+OpenButton.Name = "OpenButton"
+OpenButton.Size = UDim2.new(0, 50, 0, 50)
+OpenButton.Position = UDim2.new(0, 15, 0.5, -25)
+OpenButton.Image = "rbxassetid://131681030058686"
+OpenButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+OpenButton.BackgroundTransparency = 0.2
+OpenButton.Active = true
+OpenButton.Draggable = true -- អាចអូសប៊ូតុងរង្វង់ទៅណាក៏បាន
+OpenButton.Parent = ScreenGui
+
+local openCorner = Instance.new("UICorner", OpenButton)
+openCorner.CornerRadius = UDim.new(1, 0) -- កំណត់ឲ្យចេញជារង្វង់មូល 100%
+
+-- បន្ថែមបន្ទាត់ព្រំរង្វង់ (Stroke) ឲ្យមើលទៅលេចស្អាត
+local openStroke = Instance.new("UIStroke", OpenButton)
+openStroke.Color = Color3.fromRGB(150, 0, 255)
+openStroke.Thickness = 2
+
+-- Function ចុចបិទបើក Main Frame
+OpenButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+end)
+
+---------------------------------------------------------
+-- Top Header Logo, Title & Close Button
+---------------------------------------------------------
 local MainLogo = Instance.new("ImageLabel")
 MainLogo.Name = "MainLogo"
 MainLogo.Size = UDim2.new(0, 35, 0, 35)
@@ -45,7 +65,7 @@ MainLogo.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(0, 200, 0, 35)
 Title.Position = UDim2.new(0, 50, 0, 8)
-Title.Text = "DELTA EXECUTOR"
+Title.Text = "JERRY V1.0"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Font = Enum.Font.SourceSansBold
@@ -53,9 +73,21 @@ Title.TextSize = 18
 Title.BackgroundTransparency = 1
 Title.Parent = MainFrame
 
--- Toggle UI Function
-OpenButton.MouseButton1Click:Connect(function()
-    MainFrame.Visible = not MainFrame.Visible
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Name = "CloseBtn"
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -38, 0, 10)
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 16
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseBtn.Parent = MainFrame
+
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
 end)
 
 -- Sidebar Section
@@ -107,8 +139,7 @@ local function createTabBtn(name, pos, page)
     btn.TextSize = 15
     btn.Parent = Sidebar
     
-    local corner = Instance.new("UICorner", btn)
-    corner.CornerRadius = UDim.new(0, 6)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
     
     btn.MouseButton1Click:Connect(function()
         hideAllPages()
@@ -134,8 +165,7 @@ local function createToggleBtn(parent, text, pos, callback)
     btn.TextSize = 15
     btn.Parent = parent
     
-    local corner = Instance.new("UICorner", btn)
-    corner.CornerRadius = UDim.new(0, 6)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
     
     local state = false
     btn.MouseButton1Click:Connect(function()
@@ -146,15 +176,13 @@ local function createToggleBtn(parent, text, pos, callback)
     end)
 end
 
--- 1. Noclip Logic (Optimized & Smooth)
+-- 1. Noclip Logic (Optimized)
 local noclipEnabled = false
 local noclipConnection = nil
 
 local function toggleNoclip(state)
     noclipEnabled = state
-    
     if noclipEnabled then
-        -- បើក Noclip: ដំណើរការ Loop កាត់បន្ថយការ Lag
         if not noclipConnection then
             noclipConnection = RunService.Stepped:Connect(function()
                 local char = LocalPlayer.Character
@@ -168,12 +196,10 @@ local function toggleNoclip(state)
             end)
         end
     else
-        -- បិទ Noclip: ផ្ដាច់ Loop និងកំណត់ CanCollide មកធម្មតាវិញ
         if noclipConnection then
             noclipConnection:Disconnect()
             noclipConnection = nil
         end
-        
         local char = LocalPlayer.Character
         if char then
             for _, part in ipairs(char:GetDescendants()) do
@@ -187,9 +213,7 @@ local function toggleNoclip(state)
     end
 end
 
-createToggleBtn(HomePage, "Noclip", 0, function(state)
-    toggleNoclip(state)
-end)
+createToggleBtn(HomePage, "Noclip", 0, toggleNoclip)
 
 -- 2. Fly Logic
 local flyEnabled = false
