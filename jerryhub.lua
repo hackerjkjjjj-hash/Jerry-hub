@@ -250,17 +250,103 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- 3. ESP Box Line Logic
+---------------------------------------------------------
+-- 3. ESP Box + Line Logic (Optimized for Mobile)
+---------------------------------------------------------
 local espEnabled = false
-local espFolder = Instance.new("Folder", ScreenGui)
-espFolder.Name = "ESPFolder"
+
+local function addESP(plr)
+    if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = plr.Character.HumanoidRootPart
+        
+        -- 1. បង្កើត Box ESP (BillboardGui)
+        if not hrp:FindFirstChild("ESPBox") then
+            local bb = Instance.new("BillboardGui")
+            bb.Name = "ESPBox"
+            bb.Adornee = hrp
+            bb.Size = UDim2.new(4, 0, 5.5, 0)
+            bb.AlwaysOnTop = true
+            bb.Parent = hrp
+
+            local boxFrame = Instance.new("Frame")
+            boxFrame.Size = UDim2.new(1, 0, 1, 0)
+            boxFrame.BackgroundTransparency = 1
+            boxFrame.Parent = bb
+
+            local stroke = Instance.new("UIStroke")
+            stroke.Color = Color3.fromRGB(255, 0, 0)
+            stroke.Thickness = 1.5
+            stroke.Parent = boxFrame
+        end
+
+        -- 2. បង្កើត Line Tracer (Beam)
+        local localChar = LocalPlayer.Character
+        local localHRP = localChar and localChar:FindFirstChild("HumanoidRootPart")
+        
+        if localHRP and not hrp:FindFirstChild("ESPLine") then
+            local a0 = localHRP:FindFirstChild("ESPAttachment")
+            if not a0 then
+                a0 = Instance.new("Attachment")
+                a0.Name = "ESPAttachment"
+                a0.Parent = localHRP
+            end
+
+            local a1 = Instance.new("Attachment")
+            a1.Name = "ESPLineAttachment"
+            a1.Parent = hrp
+
+            local beam = Instance.new("Beam")
+            beam.Name = "ESPLine"
+            beam.Attachment0 = a0
+            beam.Attachment1 = a1
+            beam.Color = ColorSequence.new(Color3.fromRGB(255, 0, 0))
+            beam.Width0 = 0.08
+            beam.Width1 = 0.08
+            beam.FaceCamera = true
+            beam.Parent = hrp
+        end
+    end
+end
+
+local function removeESP(plr)
+    if plr.Character then
+        local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            if hrp:FindFirstChild("ESPBox") then hrp.ESPBox:Destroy() end
+            if hrp:FindFirstChild("ESPLineAttachment") then hrp.ESPLineAttachment:Destroy() end
+            if hrp:FindFirstChild("ESPLine") then hrp.ESPLine:Destroy() end
+        end
+    end
+end
 
 createToggleBtn(HomePage, "ESP Box Line", 90, function(state)
     espEnabled = state
-    if not espEnabled then
-        espFolder:ClearAllChildren()
+    for _, plr in pairs(Players:GetPlayers()) do
+        if espEnabled then
+            addESP(plr)
+        else
+            removeESP(plr)
+        end
     end
 end)
+
+local function setupPlayerESP(plr)
+    plr.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        if espEnabled then
+            addESP(plr)
+        end
+    end)
+end
+
+for _, plr in pairs(Players:GetPlayers()) do
+    if plr ~= LocalPlayer then
+        setupPlayerESP(plr)
+    end
+end
+
+Players.PlayerAdded:Connect(setupPlayerESP)
+
 
 RunService.RenderStepped:Connect(function()
     if not espEnabled then return end
