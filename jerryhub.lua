@@ -786,10 +786,37 @@ local function applyAnimationPack(character, pack)
     ancestryConnection = character.AncestryChanged:Connect(function(_, parent)
         if parent then return end
 
-        if stateConnection then stateConnection:Disconnect() end
-        if runningConnection then runningConnection:Disconnect() end
-        if ancestryConnection then ancestryConnection:Disconnect() end
+        if animationControllerCleanup then
+            pcall(animationControllerCleanup)
+            animationControllerCleanup = nil
+        end
     end)
+
+    animationControllerCleanup = function()
+        if stateConnection then
+            stateConnection:Disconnect()
+            stateConnection = nil
+        end
+
+        if runningConnection then
+            runningConnection:Disconnect()
+            runningConnection = nil
+        end
+
+        if ancestryConnection then
+            ancestryConnection:Disconnect()
+            ancestryConnection = nil
+        end
+
+        for _, track in pairs(tracks) do
+            pcall(function()
+                track:Stop(0.08)
+                track:Destroy()
+            end)
+        end
+
+        current = nil
+    end
 
     update()
     return next(tracks) ~= nil
@@ -805,6 +832,12 @@ end
 local function resetAnimations(character)
     if not character or not character.Parent then return end
 
+    -- Fully stop Jerry's custom animation controller.
+    if animationControllerCleanup then
+        pcall(animationControllerCleanup)
+        animationControllerCleanup = nil
+    end
+
     local animate = character:FindFirstChild("Animate")
     local humanoid = character:FindFirstChildOfClass("Humanoid")
     local packFolder = character:FindFirstChild("__JerryAnimationPack")
@@ -817,10 +850,12 @@ local function resetAnimations(character)
         packFolder:Destroy()
     end
 
+    -- Restore Roblox's normal Animate controller.
     if animate then
         animate.Enabled = false
-        task.wait()
+        task.wait(0.1)
         animate.Enabled = true
+        task.wait(0.15)
     end
 end
 
